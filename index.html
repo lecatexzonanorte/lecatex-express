@@ -2,7 +2,2561 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <title>Lecatex Express - POS Seguro</title><!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
     <title>Lecatex Express - POS Seguro</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script> <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+        :root { 
+            --primary: #2563eb; --primary-hover: #1d4ed8;
+            --success: #10b981; --success-hover: #059669;
+            --danger: #ef4444; --danger-hover: #dc2626;
+            --warning: #f59e0b; --purple: #8b5cf6; --purple-hover: #7c3aed;
+            --dark: #0f172a; --darker: #020617; --gray-dark: #334155;
+            --bg-main: #f1f5f9; --bg-panel: #ffffff;
+            --border: #e2e8f0; --text-main: #0f172a; --text-muted: #64748b;
+        }
+
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-main); height: 100vh; overflow: hidden; color: var(--text-main); display: flex; flex-direction: column; }
+        
+        /* === PANTALLA DE LOGIN === */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--darker); z-index: 10000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .login-box { background: white; padding: 40px 30px; border-radius: 16px; width: 100%; max-width: 350px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); text-align: center; }
+        .login-box h1 { margin: 0 0 5px 0; font-size: 24px; color: var(--darker); letter-spacing: -1px; }
+        .login-box p { margin: 0 0 25px 0; font-size: 14px; color: var(--text-muted); }
+        .login-box input { width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; box-sizing: border-box; background: #f8fafc; transition: 0.2s; }
+        .login-box input:focus { border-color: var(--primary); outline: none; background: white; }
+        .btn-login { width: 100%; background: var(--primary); color: white; border: none; padding: 15px; font-size: 16px; font-weight: 800; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+        .btn-login:hover { background: var(--primary-hover); }
+
+        /* Contenedor de la app (oculto por defecto) */
+        #app-content { display: none; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; }
+
+        header { background: var(--darker); color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; z-index: 10; border-bottom: 1px solid #1e293b; }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .btn-hamburguesa { background: transparent; color: white; border: none; font-size: 26px; cursor: pointer; padding: 0 10px 0 0; transition: 0.2s; display: flex; align-items: center;}
+        .btn-hamburguesa:hover { color: var(--primary); }
+
+        #overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 999; display: none; opacity: 0; transition: opacity 0.3s ease; backdrop-filter: blur(2px); }
+        #overlay.open { display: block; opacity: 1; }
+
+        #sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100vh; background: var(--dark); color: white; z-index: 1000; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.5); }
+        #sidebar.open { left: 0; }
+        
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #1e293b; background: var(--darker); }
+        .sidebar-header h3 { margin: 0; font-size: 18px; letter-spacing: 0.5px; }
+        .btn-cerrar-menu { background: transparent; color: #94a3b8; border: none; font-size: 24px; cursor: pointer; transition: 0.2s; }
+        .btn-cerrar-menu:hover { color: var(--danger); }
+
+        .menu-btn { background: transparent; color: #94a3b8; border: none; padding: 18px 20px; font-size: 15px; font-weight: 600; cursor: pointer; text-align: left; transition: 0.2s; border-left: 4px solid transparent; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #1e293b; }
+        .menu-btn:hover { color: white; background: rgba(255,255,255,0.05); padding-left: 25px; }
+        .menu-btn.active { color: white; border-left: 4px solid var(--primary); background: rgba(37, 99, 235, 0.1); }
+        
+        .btn-logout { margin-top: auto; border-left: 4px solid var(--danger); color: #fca5a5; }
+        .btn-logout:hover { background: rgba(239, 68, 68, 0.1); color: white; }
+
+        .main { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; min-height: 0; }
+        .panel { background: var(--bg-panel); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); }
+        .panel-header { padding: 15px 20px; border-bottom: 1px solid var(--border); background: #f8fafc; }
+        .panel-header h3, .panel-header h2 { margin: 0; font-size: 18px; color: var(--text-main); }
+        .panel-body { padding: 15px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px;}
+
+        input:not(#login-email):not(#login-pass), select { width: 100%; padding: 12px 15px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; box-sizing: border-box; background: #f8fafc; color: var(--text-main); font-family: 'Inter', sans-serif; transition: 0.2s; }
+        input:not(#login-email):not(#login-pass):focus, select:focus { border-color: var(--primary); outline: none; background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .inventory { flex: 2; }
+        .grid-productos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; align-content: start; }
+        
+        .pos-card { background: white; border: 2px solid var(--border); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: all 0.15s ease; height: 120px; user-select: none; position: relative; overflow: hidden; }
+        .pos-card:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .pos-card:active { transform: translateY(0); }
+        .pos-card-purple:hover { border-color: var(--purple); }
+        
+        .prod-title { font-size: 13px; font-weight: 800; color: var(--text-main); line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .prod-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
+        .prod-price { font-size: 18px; font-weight: 800; color: var(--primary); margin-top: auto; padding-top: 10px; }
+        .prod-price-purple { color: var(--purple); }
+        .prod-price-cost { font-size: 11px; font-weight: 700; color: var(--danger); margin-top: 2px; }
+        .stock-badge { position: absolute; top: 10px; right: 10px; font-size: 11px; font-weight: 800; padding: 2px 6px; border-radius: 6px; }
+
+        .checkout { flex: 1; min-width: 320px; max-width: 450px; background: white; display: flex; flex-direction: column; min-height: 0; }
+        .ticket-area { flex: 1; overflow-y: auto; padding: 0 15px; margin-top: 10px; border-bottom: 2px dashed var(--border); min-height: 0; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; }
+        .cart-item:last-child { border-bottom: none; }
+        .btn-delete-pos { color: var(--danger); background: #fee2e2; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; }
+        .btn-delete-pos:hover { background: var(--danger); color: white; }
+
+        .checkout-footer { padding: 15px; background: #f8fafc; display: flex; flex-direction: column; gap: 15px; }
+        .total-display { font-size: 36px; font-weight: 800; color: var(--text-main); text-align: right; line-height: 1; letter-spacing: -1px; }
+        .total-display span { color: var(--primary); }
+        .total-display-purple span { color: var(--purple); }
+
+        .botones-pos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-pos { border: none; padding: 18px 10px; font-size: 14px; font-weight: 800; border-radius: 10px; cursor: pointer; color: white; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .btn-pos:active { transform: scale(0.98); }
+        
+        .btn-factura { background: var(--success); grid-column: span 2; font-size: 18px; padding: 20px; }
+        .btn-factura:hover { background: var(--success-hover); }
+        .btn-ticket { background: var(--gray-dark); }
+        .btn-ticket:hover { background: #1e293b; }
+        .btn-presupuesto { background: var(--primary); }
+        .btn-presupuesto:hover { background: var(--primary-hover); }
+        .btn-fabrica-generar { background: var(--purple); grid-column: span 2; font-size: 16px; padding: 20px;}
+        .btn-fabrica-generar:hover { background: var(--purple-hover); }
+
+        .list-card { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; background: white; }
+        .btn-ingresar { background: var(--success); color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        
+        .tabla-reportes { width: 100%; border-collapse: collapse; text-align: left; background: white; }
+        .tabla-reportes th { background: var(--gray-dark); color: white; padding: 15px 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 1;}
+        .tabla-reportes td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; color: var(--text-main); }
+        .tabla-reportes tr:hover { background-color: #f8fafc; }
+        
+        .resumen-caja { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+        .fabrica-totales { display: flex; flex-direction: column; gap: 4px; }
+        .fabrica-total-costo { font-size: 13px; font-weight: 700; color: var(--danger); text-align: right; }
+        .fabrica-total-venta { font-size: 13px; font-weight: 700; color: var(--text-muted); text-align: right; }
+        
+        #status-nube { font-size: 12px; font-weight: bold; color: #10b981; margin-left: 10px; display: flex; align-items: center; gap: 5px; }
+        .dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px}
+        .dash-card{background:white;border-radius:12px;padding:16px 18px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+        .dash-card-label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+        .dash-card-value{font-size:24px;font-weight:800;letter-spacing:-1px;color:var(--text-main)}
+        .dash-card-sub{font-size:11px;color:var(--text-muted);margin-top:3px}
+        .dash-card-blue .dash-card-value{color:var(--primary)}
+        .dash-card-green .dash-card-value{color:var(--success)}
+        .dash-card-red .dash-card-value{color:var(--danger)}
+        .dash-card-purple .dash-card-value{color:var(--purple)}
+        .dash-card-orange .dash-card-value{color:var(--warning)}
+        .dash-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+        .dash-panel{background:white;border-radius:12px;padding:16px;border:1px solid var(--border)}
+        .dash-section-title{font-size:13px;font-weight:800;color:var(--text-main);margin:0 0 10px;text-transform:uppercase;letter-spacing:.5px}
+        .dash-table{width:100%;border-collapse:collapse;font-size:12px}
+        .dash-table th{background:#f8fafc;padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;border-bottom:1px solid var(--border)}
+        .dash-table td{padding:9px 10px;border-bottom:1px solid #f1f5f9;font-weight:600;color:var(--text-main)}
+        .dash-table tr:last-child td{border-bottom:none}
+        .dash-table tr:hover td{background:#f8fafc}
+        .dash-bar{height:7px;border-radius:4px;background:var(--primary);display:inline-block;vertical-align:middle;min-width:2px}
+        .dash-badge{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:800}
+        .dash-badge-green{background:#d1fae5;color:#065f46}
+        .dash-badge-red{background:#fee2e2;color:#991b1b}
+        .dash-badge-gray{background:#f1f5f9;color:#475569}
+        .dash-filtro{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+        .dash-filtro button{border:1px solid var(--border);background:white;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text-muted);transition:.15s}
+        .dash-filtro button.active{background:var(--primary);color:white;border-color:var(--primary)}
+        @media(max-width:900px){.dash-row{grid-template-columns:1fr}}
+
+        /* Modal acción comprobante */
+        #modal-accion { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center; }
+        #modal-accion.open { display:flex; }
+        .modal-box { background:white; border-radius:16px; padding:28px 28px 24px; width:340px; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+        .modal-box h3 { margin:0 0 6px; font-size:17px; color:var(--text-main); }
+        .modal-box p { margin:0 0 18px; font-size:13px; color:var(--text-muted); }
+        .modal-btns { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
+        .modal-btn { border:none; padding:14px 10px; font-size:13px; font-weight:800; border-radius:10px; cursor:pointer; color:white; transition:0.2s; }
+        .modal-btn:active { transform:scale(0.97); }
+        .modal-btn-print { background:var(--gray-dark); }
+        .modal-btn-print:hover { background:#1e293b; }
+        .modal-btn-mail { background:#ea4335; grid-column:span 2; }
+        .modal-btn-mail:hover { background:#c62828; }
+        .modal-btn-cancel { background:#f1f5f9; color:var(--text-muted); grid-column:span 2; padding:10px; }
+        .modal-btn-cancel:hover { background:#e2e8f0; }
+        .modal-email-input { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; box-sizing:border-box; margin-bottom:10px; display:none; border-color:#ea4335; }
+        .modal-email-input.visible { display:block; }
+
+        /* ── CALCULADORA ── */
+        .calc-card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 20px; max-width: 680px; width: 100%; margin: 0 auto; }
+        .calc-section { margin-bottom: 16px; }
+        .calc-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; display: block; }
+        .calc-resultado { background: #0f172a; border-radius: 10px; padding: 18px 20px; margin-top: 16px; }
+        .calc-total { font-size: 32px; font-weight: 800; color: #34d399; letter-spacing: -1px; }
+        .calc-desglose { font-size: 13px; color: #94a3b8; margin-top: 8px; line-height: 1.6; }
+        .calc-desglose strong { color: #fbbf24; }
+        .calc-panel-base { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 14px; margin-top: 12px; }
+        .calc-panel-base-title { font-size: 12px; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 10px; }
+        .calc-base-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .calc-base-item label { font-size: 11px; color: #78350f; font-weight: 700; display: block; margin-bottom: 4px; }
+        .calc-precio-badge { display: inline-block; background: #d1fae5; color: #065f46; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-left: 6px; }
+        .calc-precio-badge.naranja { background: #fef3c7; color: #92400e; }
+        .btn-calc-pdf { background: #0f172a; color: white; border: none; padding: 14px 24px; font-size: 14px; font-weight: 800; border-radius: 10px; cursor: pointer; width: 100%; margin-top: 14px; transition: .2s; }
+        .btn-calc-pdf:hover { background: #1e293b; }
+        .calc-firebase-badge { font-size: 10px; font-weight: 700; color: #059669; margin-left: 6px; }
+
+        /* ── BASE DE CLIENTES ── */
+        .cli-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; align-content: start; }
+        .cli-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: .15s; position: relative; display: flex; flex-direction: column; justify-content: space-between; }
+        .cli-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); border-color: var(--primary); }
+        .cli-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; flex-shrink: 0; }
+        .cli-nombre { font-size: 15px; font-weight: 800; color: var(--text-main); }
+        .cli-dato { font-size: 12px; color: var(--text-muted); margin-top: 3px; display: flex; align-items: center; gap: 5px; }
+        .cli-acciones { display: flex; gap: 8px; margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+        .cli-btn { flex: 1; border: 1px solid var(--border); background: #f8fafc; padding: 7px; border-radius: 7px; font-size: 11px; font-weight: 700; cursor: pointer; text-align: center; transition: .15s; color: var(--text-main); }
+        .cli-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .cli-btn-danger:hover { background: var(--danger); border-color: var(--danger); }
+        .cli-btn-green:hover { background: var(--success); border-color: var(--success); }
+        /* Modal clientes */
+        #modal-cliente { display: none; position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,.55); z-index:9999; align-items:center; justify-content:center; }
+        #modal-cliente.open { display: flex; }
+        .cli-modal-box { background: white; border-radius: 16px; padding: 28px; width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+        .cli-modal-box h3 { margin: 0 0 18px; font-size: 18px; }
+        .cli-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .cli-form-full { margin-bottom: 12px; }
+        .cli-form-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .cli-required { color: var(--danger); }
+        /* Modal historial */
+        #modal-historial-cli { display: none; position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,.55); z-index:9999; align-items:center; justify-content:center; }
+        #modal-historial-cli.open { display: flex; }
+        .cli-hist-box { background: white; border-radius: 16px; padding: 24px; width: 640px; max-width: 95vw; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <h1>Lecatex Express</h1>
+        <p>Terminal POS Cloud</p>
+        <input type="email" id="login-email" placeholder="Correo Electrónico">
+        <input type="password" id="login-pass" placeholder="Contraseña">
+        <button class="btn-login" onclick="iniciarSesion()">INGRESAR AL SISTEMA</button>
+    </div>
+</div>
+
+<div id="app-content">
+    <div id="overlay" onclick="toggleMenu()"></div>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h3>Menú Principal</h3>
+            <button class="btn-cerrar-menu" onclick="toggleMenu()">✖</button>
+        </div>
+        <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
+            <button class="menu-btn" id="btn-dashboard" onclick="cambiarPestana('dashboard')">📊 Dashboard</button>
+            <button class="menu-btn active" id="btn-pos" onclick="cambiarPestana('pos')">🛒 Punto de Venta (POS)</button>
+            <button class="menu-btn" id="btn-presupuesto" onclick="cambiarPestana('presupuesto')">📋 Presupuestos</button>
+            <button class="menu-btn" id="btn-fabrica" onclick="cambiarPestana('fabrica')">🏭 Pedidos a Fábrica</button>
+            <button class="menu-btn" id="btn-deuda" onclick="cambiarPestana('deuda')">🏢 Cuenta Cte. Fábrica</button>
+            <button class="menu-btn" id="btn-inventario" onclick="cambiarPestana('inventario')">📦 Ingresar Stock Físico</button>
+            <button class="menu-btn" id="btn-stock" onclick="cambiarPestana('stock')">➕ Crear Producto Nuevo</button>
+            <button class="menu-btn" id="btn-reportes" onclick="cambiarPestana('reportes')">📊 Reportes de Inventario <span id="badge-stock" style="display:none;background:#ef4444;color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:auto;">0</span></button>
+            <button class="menu-btn" id="btn-ventas" onclick="cambiarPestana('ventas')">📈 Historial de Ventas</button>
+            <button class="menu-btn" id="btn-clientes" onclick="cambiarPestana('clientes')">👥 Clientes</button>
+            <button class="menu-btn" id="btn-pendientes" onclick="cambiarPestana('pendientes')">⏳ Cobros Pendientes <span id="badge-pendientes" style="display:none;background:#ef4444;color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:auto;">0</span></button>
+            
+            <button class="menu-btn btn-logout" onclick="cerrarSesion()">🔒 Cerrar Sesión</button>
+        </div>
+        <div style="padding: 20px; border-top: 1px solid #1e293b; color: #64748b; font-size: 12px; text-align: center;">
+            Lecatex Express v5.1 Seguro
+        </div>
+    </div>
+
+    <header>
+        <div class="header-left">
+            <button class="btn-hamburguesa" onclick="toggleMenu()">☰</button>
+            <div>
+                <strong style="font-size: 20px; letter-spacing: -0.5px;">LECATEX EXPRESS</strong> 
+                <span style="color:#94a3b8; margin-left:10px; font-size: 14px;">POS Terminal</span>
+                <span id="status-nube"><span class="dot"></span> Nube Conectada</span>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:15px;">
+            <div style="font-size: 13px; font-weight: 600; color: #cbd5e1;">Villa Ballester | PV: 00003</div>
+            <button onclick="cierreDelDia()" style="background:#ef4444; color:white; border:none; padding:10px 18px; font-size:13px; font-weight:800; border-radius:8px; cursor:pointer; letter-spacing:0.5px; text-transform:uppercase; transition:0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">🔒 Cierre del Día</button>
+        </div>
+    </header>
+
+
+    <div id="vista-pos" class="main">
+        <div class="panel inventory">
+            <div class="panel-header" style="display:flex; gap: 15px; border-bottom: none; padding-bottom: 0;">
+                <input type="text" id="bus" placeholder="🔍 Buscar producto..." onkeyup="filtrarPos()" style="border-width: 2px; font-size: 16px;">
+            </div>
+            <div class="panel-body grid-productos" id="lista-pos"></div>
+        </div>
+
+        <div class="panel checkout" style="border-top: 5px solid var(--primary);">
+            <div class="panel-header" style="padding: 10px 15px;">
+                <!-- Campo cliente + botones -->
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                    <div style="position:relative; flex:1;">
+                        <input type="text" id="clie-pos" placeholder="👤 Cliente / Razón Social" style="border:none; background:transparent; font-weight:bold; font-size:15px; padding:5px 0; width:100%;" oninput="buscarClientesPOS()" autocomplete="off">
+                        <div id="cli-sugerencias" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 20px rgba(0,0,0,.12); z-index:100; max-height:200px; overflow-y:auto;"></div>
+                    </div>
+                    <button onclick="abrirFormClientePOS()" style="background:#10b981;color:white;border:none;padding:7px 10px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">➕ Cliente</button>
+                </div>
+                <!-- Info cliente seleccionado -->
+                <div id="cli-info-pos" style="display:none; background:#eff6ff; border-radius:8px; padding:8px 10px; margin-bottom:8px; font-size:12px; color:#1e40af;">
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        <span id="cli-info-pos-texto" style="font-weight:700;"></span>
+                        <button onclick="limpiarClientePOS()" style="background:transparent;border:none;color:#93c5fd;cursor:pointer;font-size:14px;padding:0 4px;">✖</button>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="desc-pos" placeholder="% Desc" min="0" max="100" style="padding: 8px; flex: 1;" onkeyup="actualizarCarritoPos()" onchange="actualizarCarritoPos()">
+                    <select id="pago-pos" style="padding: 8px; flex: 2; font-weight: 600;">
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Transferencia">Transferencia / Billetera</option>
+                        <option value="Debito">Tarjeta Débito</option>
+                        <option value="Credito">Tarjeta Crédito</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="ticket-area" id="carrito-pos"></div>
+            
+            <div class="checkout-footer">
+                <div class="total-display">Total: $<span id="res-total-pos">0</span></div>
+                <div class="botones-pos">
+                    <button class="btn-pos btn-factura" onclick="abrirModalAccion('factura')">FACTURA C</button>
+                    <button class="btn-pos btn-ticket" onclick="abrirModalAccion('ticket')">TICKET X</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    
+<div id="vista-dashboard" class="main" style="display:none;flex-direction:column;overflow-y:auto;padding:18px;gap:0;">
+
+    <div class="dash-filtro" id="dash-filtro">
+        <button class="active" onclick="setDashPeriodo('hoy',this)">Hoy</button>
+        <button onclick="setDashPeriodo('semana',this)">7 días</button>
+        <button onclick="setDashPeriodo('mes',this)">Este mes</button>
+        <button onclick="setDashPeriodo('año',this)">Este año</button>
+        <button onclick="setDashPeriodo('todo',this)">Todo</button>
+    </div>
+
+    <div class="dash-grid">
+        <div class="dash-card dash-card-blue"><div class="dash-card-label">💰 Total Facturado</div><div class="dash-card-value" id="dk-facturado">—</div><div class="dash-card-sub" id="dk-facturado-sub"></div></div>
+        <div class="dash-card dash-card-green"><div class="dash-card-label">📈 Ganancia Bruta</div><div class="dash-card-value" id="dk-ganancia">—</div><div class="dash-card-sub" id="dk-ganancia-sub"></div></div>
+        <div class="dash-card dash-card-red"><div class="dash-card-label">🏭 Deuda Fábrica</div><div class="dash-card-value" id="dk-deuda">—</div><div class="dash-card-sub">Cuenta corriente activa</div></div>
+        <div class="dash-card dash-card-orange"><div class="dash-card-label">🧾 Operaciones</div><div class="dash-card-value" id="dk-ops">—</div><div class="dash-card-sub" id="dk-ops-sub"></div></div>
+        <div class="dash-card dash-card-purple"><div class="dash-card-label">📦 Con Stock</div><div class="dash-card-value" id="dk-stock-pos">—</div><div class="dash-card-sub" id="dk-stock-neg"></div></div>
+        <div class="dash-card"><div class="dash-card-label">💳 Medio más usado</div><div class="dash-card-value" style="font-size:16px;" id="dk-medio">—</div><div class="dash-card-sub" id="dk-medio-sub"></div></div>
+    </div>
+
+    <div class="dash-row">
+        <div class="dash-panel">
+            <div class="dash-section-title">🏆 Productos más vendidos</div>
+            <div id="dash-top-prod" style="max-height:300px;overflow-y:auto;"><p style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px 0;">Cargando...</p></div>
+        </div>
+        <div class="dash-panel">
+            <div class="dash-section-title">💳 Por medio de pago</div>
+            <div id="dash-medios"><p style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px 0;">Cargando...</p></div>
+        </div>
+    </div>
+
+    <div class="dash-row">
+        <div class="dash-panel">
+            <div class="dash-section-title">⚠️ Stock crítico (faltantes)</div>
+            <div id="dash-stock-crit" style="max-height:260px;overflow-y:auto;"><p style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px 0;">Cargando...</p></div>
+        </div>
+        <div class="dash-panel">
+            <div class="dash-section-title">🏭 Cuenta corriente fábrica</div>
+            <div id="dash-cc-fabrica"><p style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px 0;">Cargando...</p></div>
+        </div>
+    </div>
+
+</div>
+
+<div id="vista-presupuesto" class="main" style="display: none;">
+        <div class="panel inventory">
+            <div class="panel-header" style="display:flex; gap: 15px; border-bottom: none; padding-bottom: 0;">
+                <input type="text" id="bus-presup" placeholder="🔍 Buscar producto..." onkeyup="filtrarPresupuesto()" style="border-width: 2px; border-color: #0ea5e9; font-size: 16px;">
+            </div>
+            <div class="panel-body grid-productos" id="lista-presup"></div>
+        </div>
+
+        <div class="panel checkout" style="border-top: 5px solid #0ea5e9;">
+            <div class="panel-header" style="padding: 10px 15px;">
+                <div style="position:relative;">
+                    <input type="text" id="clie-presup" placeholder="👤 Cliente / Razón Social" style="margin-bottom: 4px; border: none; background: transparent; font-weight: bold; font-size: 16px; padding: 5px 0; width:100%;" oninput="buscarClientesPresup()" autocomplete="off">
+                    <div id="cli-sug-presup" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 20px rgba(0,0,0,.12); z-index:100; max-height:180px; overflow-y:auto;"></div>
+                </div>
+                <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                    <input type="tel" id="tel-presup-campo" placeholder="📱 Teléfono" style="padding: 8px; flex: 1; font-size:13px;">
+                    <input type="email" id="email-presup" placeholder="📧 Email" style="padding: 8px; flex: 1; font-size:13px; border-color: #ea4335;">
+                </div>
+                <input type="text" id="dir-presup-campo" placeholder="📍 Dirección (opcional)" style="padding: 8px; width:100%; box-sizing:border-box; margin-bottom:6px; font-size:13px;">
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="desc-presup" placeholder="% Desc" min="0" max="100" style="padding: 8px; flex: 1;" onkeyup="actualizarCarritoPresup()" onchange="actualizarCarritoPresup()">
+                    <input type="text" id="obs-presup" placeholder="Observaciones" style="padding: 8px; flex: 2;">
+                </div>
+            </div>
+            <div class="ticket-area" id="carrito-presup"></div>
+            <div class="checkout-footer">
+                <div class="total-display" style="font-size:28px;">Total: $<span id="res-total-presup" style="color:#0ea5e9;">0</span></div>
+                <div class="botones-pos">
+                    <button class="btn-pos btn-factura" style="background:#0ea5e9; grid-column: span 2; font-size:16px;" onclick="emitirPresupuestoNuevo()">📋 GENERAR PRESUPUESTO PDF</button>
+                    <button class="btn-pos btn-ticket" onclick="limpiarPresupuesto()">🗑️ LIMPIAR</button>
+                <button class="btn-pos" style="background:#ea4335; grid-column: span 2; font-size:14px; padding:14px;" onclick="enviarPresupuestoGmail()">📧 ENVIAR POR GMAIL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="vista-fabrica" class="main" style="display: none;">
+        <div class="panel inventory">
+            <div class="panel-header" style="display:flex; gap: 15px; border-bottom: none; padding-bottom: 0;">
+                <input type="text" id="bus-fabrica" placeholder="🔍 Buscar producto para encargar..." onkeyup="filtrarFabrica()" style="border-width: 2px; border-color: var(--purple); font-size: 16px;">
+            </div>
+            <div class="panel-body grid-productos" id="lista-fabrica"></div>
+        </div>
+
+        <div class="panel checkout" style="border-top: 5px solid var(--purple);">
+            <div class="panel-header" style="padding: 10px 15px; background: #faf5ff;">
+                <input type="text" id="clie-fabrica" placeholder="👤 Nombre del Cliente" style="margin-bottom: 8px; border: none; background: transparent; font-weight: bold; font-size: 16px; padding: 5px 0; color: var(--purple);">
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="abono-fabrica" placeholder="$ Seña" style="padding: 8px; flex: 1; border-color: var(--purple);" onkeyup="calcularSaldoFabrica()" onchange="calcularSaldoFabrica()">
+                    <select id="pago-fabrica" style="padding: 8px; flex: 2; font-weight: 600;">
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Transferencia">Transferencia / Billetera</option>
+                        <option value="Debito">Tarjeta Débito</option>
+                        <option value="Credito">Tarjeta Crédito</option>
+                    </select>
+                </div>
+                <div style="margin-top: 10px; font-size: 14px; font-weight: bold; text-align: right;">
+                    Estado: <span id="saldo-fabrica" style="color: var(--danger);">Resta $0</span>
+                </div>
+            </div>
+            
+            <div class="ticket-area" id="carrito-fabrica"></div>
+            
+            <div class="checkout-footer">
+                <div class="fabrica-totales">
+                    <div class="fabrica-total-costo">🏭 Deuda Fábrica (costo): $<span id="res-costo-fabrica">0</span></div>
+                    <div class="fabrica-total-venta">💰 Total Venta Cliente: $<span id="res-venta-fabrica">0</span></div>
+                </div>
+                <div class="total-display total-display-purple" style="font-size: 28px;">Pedido: $<span id="res-total-fabrica">0</span></div>
+                <div class="botones-pos">
+                    <button class="btn-pos btn-fabrica-generar" onclick="generarPedidoFabrica()">GENERAR PEDIDO Y DEUDA</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="vista-deuda" class="main" style="display: none; flex-direction: column;">
+        <div class="panel" style="flex: 1; border-top: 5px solid var(--danger);">
+            <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; background: #fef2f2;">
+                <h2 style="margin: 0; color: #991b1b;">🏢 Estado de Cuenta Corriente (Fábrica Matriz)</h2>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin: 15px; flex-wrap: wrap;">
+                <div id="caja-saldo-fabrica" class="resumen-caja" style="flex: 2; border-color: #f87171; background: #fee2e2; min-width: 300px;">
+                    <div id="titulo-saldo-fabrica" style="color: #7f1d1d; font-size: 16px;"><strong>Total Deuda Pendiente a Pagar:</strong></div>
+                    <div style="font-size: 28px; font-weight: 800; color: #b91c1c;">$<span id="total-deuda-fabrica">0</span></div>
+                </div>
+
+                <div class="resumen-caja" style="flex: 1; background: #f8fafc; flex-direction: column; align-items: stretch; gap: 10px; border-color: #cbd5e1; min-width: 300px;">
+                    <div style="font-size: 14px; font-weight: bold; color: var(--text-main);">➕ Registrar Pago a Fábrica</div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="monto-pago-manual" placeholder="Monto transferido $" style="flex: 1;">
+                        <button class="btn-pos" style="background: var(--success); padding: 10px 20px;" onclick="registrarPagoManualFabrica()">PAGAR</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-body" style="padding: 0;">
+                <table class="tabla-reportes">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Detalle de Movimiento</th>
+                            <th style="text-align: right; color: #fca5a5;">Deuda Generada (+)</th>
+                            <th style="text-align: right; color: #6ee7b7;">Pago Realizado (-)</th>
+                            <th style="text-align: right;">Saldo Actual</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-deuda-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="vista-inventario" class="main" style="display: none; justify-content: center;">
+        <div class="panel" style="width: 100%; max-width: 800px; border-top: 5px solid var(--success);">
+            <div class="panel-header">
+                <h2>📦 Ingreso de Mercadería</h2>
+                <p style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">Buscá el producto y sumá las unidades que llegaron de fábrica.</p>
+                <input type="text" id="bus-stock" placeholder="🔍 Buscar producto..." onkeyup="filtrarStock()" style="margin-top: 10px; border-color: var(--success);">
+            </div>
+            <div class="panel-body" id="lista-stock"></div>
+        </div>
+    </div>
+
+    <div id="vista-stock" class="main" style="display: none; justify-content: center; align-items: flex-start;">
+        <div class="panel" style="width: 100%; max-width: 500px; border-top: 5px solid var(--gray-dark); margin-top: 20px;">
+            <div class="panel-header">
+                <h2 style="text-align: center;">➕ Cargar Nuevo Producto</h2>
+            </div>
+            <div class="panel-body">
+                <label style="font-weight: 600; font-size: 14px; margin-bottom: 5px;">Tipo / Categoría</label>
+                <input type="text" id="nuevo-tipo" placeholder="Ej: Membrana, Pincel...">
+                <label style="font-weight: 600; font-size: 14px; margin-bottom: 5px; margin-top: 10px;">Detalle / Color</label>
+                <input type="text" id="nuevo-color" placeholder="Ej: Vison x 10 Lts...">
+                
+                <div style="display: flex; gap: 15px; margin-top: 10px;">
+                    <div style="flex: 1;">
+                        <label style="font-weight: 600; font-size: 14px; margin-bottom: 5px; display: block; color: var(--danger);">Precio Costo (Fábrica)</label>
+                        <input type="number" id="nuevo-costo" placeholder="Ej: 25000">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-weight: 600; font-size: 14px; margin-bottom: 5px; display: block; color: var(--primary);">Precio Venta Público</label>
+                        <input type="number" id="nuevo-precio" placeholder="Ej: 45000">
+                    </div>
+                </div>
+
+                <button class="btn-pos" style="background: var(--dark); margin-top: 20px;" onclick="guardarProducto()">💾 GUARDAR PRODUCTO EN NUBE</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="vista-reportes" class="main" style="display: none; flex-direction: column;">
+        <div class="panel" style="flex: 1; border-top: 5px solid var(--gray-dark);">
+            <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0;">📦 Reporte de Inventario</h2>
+                <div style="display: flex; gap: 15px;">
+                    <select id="filtro-reporte" onchange="mostrarReporteStock()" style="width: 250px;">
+                        <option value="todos">Todos los productos</option>
+                        <option value="negativos">Faltantes (Pedidos)</option>
+                        <option value="positivos">Con Stock Físico</option>
+                    </select>
+                    <button class="btn-pos" style="background: var(--dark); padding: 12px 20px;" onclick="descargarReporteStockPDF()">📄 PDF</button>
+                </div>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+                <table class="tabla-reportes">
+                    <thead>
+                        <tr>
+                            <th>Categoría / Tipo</th>
+                            <th>Color / Detalle</th>
+                            <th style="text-align: right;">Costo Fábrica</th>
+                            <th style="text-align: right;">Precio Público</th>
+                            <th style="text-align: center;">Stock</th>
+                            <th style="text-align: center;">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-reportes-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="vista-ventas" class="main" style="display: none; flex-direction: column;">
+        <div class="panel" style="flex: 1; border-top: 5px solid var(--warning);">
+            <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; background: #fffbeb;">
+                <h2 style="margin: 0; color: #b45309;">📈 Historial de Ventas</h2>
+                <div style="display: flex; gap: 15px;">
+                    <select id="filtro-ventas" onchange="mostrarReporteVentas()" style="width: 250px; border-color: var(--warning);">
+                        <option value="hoy">Hoy</option>
+                        <option value="semana">Últimos 7 días</option>
+                        <option value="mes">Este Mes</option>
+                        <option value="año">Este Año</option>
+                        <option value="todo">Histórico Completo</option>
+                    </select>
+                    <button class="btn-pos" style="background: var(--warning); padding: 12px 20px; color: #78350f;" onclick="descargarReporteVentasPDF()">📄 PDF</button>
+                </div>
+            </div>
+            <div class="resumen-caja" style="margin: 15px; border-color: var(--warning); background: #fef3c7;">
+                <div style="color: #92400e; font-size: 16px;"><strong>Total Facturado / Operado:</strong></div>
+                <div style="font-size: 28px; font-weight: 800; color: #b45309;">$<span id="total-ventas-periodo">0</span></div>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+                <table class="tabla-reportes">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Tipo</th>
+                            <th style="text-align: right;">Total Venta</th>
+                            <th style="text-align: right;">Abonado</th>
+                            <th style="text-align: center;">Estado / Saldo</th>
+                            <th style="text-align: center;">PDF</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-ventas-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ================== CONFIGURACIÓN DE FIREBASE ==================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjwxqT2U2LFYF5VIsBwypq1jffJmxEmKk",
+      authDomain: "lecatex-express.firebaseapp.com",
+      projectId: "lecatex-express",
+      storageBucket: "lecatex-express.firebasestorage.app",
+      messagingSenderId: "680813827388",
+      appId: "1:680813827388:web:f6fc8503ed26bf3f0b3a39",
+      measurementId: "G-NTM7G0RPWF"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const dbFirestore = firebase.firestore();
+    const auth = firebase.auth(); // NUEVO: Inicializar Autenticación
+
+    let db = []; let historialVentas = []; let carritoPos = []; let carritoPresup = []; let carritoFabrica = [];
+
+    // ================== LOGIN DESACTIVADO (modo prueba) ==================
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-content').style.display = 'flex';
+    inicializarNube();
+
+    function iniciarSesion() {}
+    function cerrarSesion() { location.reload(); }
+
+    // ================== INICIALIZACIÓN Y SINCRONIZACIÓN EN TIEMPO REAL ==================
+    function inicializarNube() {
+        dbFirestore.collection("productos").onSnapshot(snapshot => {
+            if (snapshot.empty) {
+                console.log("No se encontraron productos.");
+            } else {
+                db = [];
+                snapshot.forEach(doc => { let data = doc.data(); data.id_db = doc.id; db.push(data); });
+                db.sort((a,b) => (a.orden||0) - (b.orden||0)); actualizarBadgeStock();
+                filtrarPos(); filtrarFabrica(); filtrarPresupuesto(); filtrarStock(); mostrarReporteStock();
+            }
+        });
+
+        dbFirestore.collection("ventas").orderBy("id", "asc").onSnapshot(snapshot => {
+            historialVentas = [];
+            snapshot.forEach(doc => { let data = doc.data(); data.id_db = doc.id; historialVentas.push(data); });
+            mostrarDeudaFabrica(); mostrarReporteVentas(); actualizarBadgePendientes();
+        });
+
+        // Clientes en tiempo real
+        dbFirestore.collection('clientes').orderBy('apellido', 'asc').onSnapshot(snapshot => {
+            clientesDB = [];
+            snapshot.forEach(doc => { let d = doc.data(); d.id_db = doc.id; clientesDB.push(d); });
+            if (document.getElementById('vista-clientes') && document.getElementById('vista-clientes').style.display !== 'none') mostrarClientes();
+        }, err => { clientesDB = []; });
+    }
+
+    function guardarVenta(cliente, total, pago, tipo, abonado = total, restante = 0, costoTotal = 0, items = []) {
+        dbFirestore.collection("ventas").add({ id: Date.now(), fecha: new Date().toISOString(), cliente: cliente, total: total, pago: pago, tipo: tipo, abonado: abonado, restante: restante, costoTotal: costoTotal, pagadoFabrica: false, items: items });
+    }
+
+    function toggleMenu() {
+        const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('overlay');
+        if (sidebar.classList.contains('open')) { sidebar.classList.remove('open'); overlay.style.opacity = '0'; setTimeout(() => overlay.style.display = 'none', 300); } else { sidebar.classList.add('open'); overlay.style.display = 'block'; setTimeout(() => overlay.style.opacity = '1', 10); }
+    }
+
+    function cambiarPestana(pestana) {
+        ['dashboard', 'pos', 'presupuesto', 'fabrica', 'deuda', 'inventario', 'stock', 'reportes', 'ventas', 'pendientes', 'clientes'].forEach(p => { document.getElementById('vista-' + p).style.display = 'none'; });
+        document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active')); document.getElementById('btn-' + pestana).classList.add('active');
+
+        if(pestana === 'dashboard') { document.getElementById('vista-dashboard').style.display = 'flex'; renderDashboard(); }
+        else if(pestana === 'pos') { document.getElementById('vista-pos').style.display = 'flex'; filtrarPos(); }
+        else if(pestana === 'presupuesto') { document.getElementById('vista-presupuesto').style.display = 'flex'; filtrarPresupuesto(); } 
+        else if (pestana === 'fabrica') { document.getElementById('vista-fabrica').style.display = 'flex'; filtrarFabrica(); } 
+        else if (pestana === 'deuda') { document.getElementById('vista-deuda').style.display = 'flex'; mostrarDeudaFabrica(); } 
+        else if (pestana === 'inventario') { document.getElementById('vista-inventario').style.display = 'flex'; filtrarStock(); } 
+        else if (pestana === 'stock') { document.getElementById('vista-stock').style.display = 'flex'; } 
+        else if (pestana === 'reportes') { document.getElementById('vista-reportes').style.display = 'flex'; mostrarReporteStock(); } 
+        else if (pestana === 'ventas') { document.getElementById('vista-ventas').style.display = 'flex'; mostrarReporteVentas(); }
+        else if (pestana === 'pendientes') { document.getElementById('vista-pendientes').style.display = 'flex'; mostrarPendientes(); }
+        else if (pestana === 'clientes') { document.getElementById('vista-clientes').style.display = 'flex'; mostrarClientes(); }
+        if (document.getElementById('sidebar').classList.contains('open')) toggleMenu();
+    }
+
+    // ================== VISTA PRESUPUESTOS ==================
+    function filtrarPresupuesto() { const val = document.getElementById('bus-presup').value.toLowerCase(); document.getElementById('lista-presup').innerHTML = db.map((i, idx) => { if (i.n.toLowerCase().includes(val) || (i.c && i.c.toLowerCase().includes(val))) { return `<div class="pos-card" style="border-color:#bae6fd;" onclick="agregarPresup(${idx})"><div><div class="prod-title">${i.n}</div>${i.c ? `<div class="prod-sub">${i.c}</div>` : ''}</div><div><div class="prod-price" style="color:#0ea5e9;">$${i.p.toLocaleString('es-AR')}</div></div></div>`; } return ''; }).join(''); }
+    function agregarPresup(idx) { carritoPresup.push(db[idx]); actualizarCarritoPresup(); }
+    function borrarPresup(key) { let idx = (() => { for(let j=carritoPresup.length-1;j>=0;j--) if((carritoPresup[j].n+'||'+carritoPresup[j].c)===key) return j; return -1; })(); if(idx !== -1) { carritoPresup.splice(idx, 1); actualizarCarritoPresup(); } }
+    function agruparCarritoPresup() { const grupos = {}; carritoPresup.forEach(item => { const key = item.n + '||' + item.c; if(!grupos[key]) grupos[key] = { item, cant: 0, key }; grupos[key].cant++; }); return Object.values(grupos); }
+    function actualizarCarritoPresup() { const div = document.getElementById('carrito-presup'); const subtotal = carritoPresup.reduce((s, i) => s + parseFloat(i.p || 0), 0); const desc = parseFloat(document.getElementById('desc-presup').value) || 0; const descMonto = subtotal * (desc / 100); const total = subtotal - descMonto; if(carritoPresup.length === 0) { div.innerHTML = "<p style='text-align:center; color:var(--text-muted); margin-top: 50px; font-weight:600;'>El presupuesto está vacío</p>"; } else { const grupos = agruparCarritoPresup(); div.innerHTML = grupos.map(g => { const precioUnit = parseFloat(g.item.p); const subtotalItem = precioUnit * g.cant; const nombre = g.item.n + (g.item.c ? ' - ' + g.item.c : ''); return `<div class="cart-item"><span style="flex:1; padding-right:6px; font-size:13px;">${nombre}</span><div style="text-align:right; margin-right:10px; white-space:nowrap;"><div style="font-size:11px; color:var(--text-muted);">$${precioUnit.toLocaleString('es-AR')} x${g.cant}</div><div style="font-size:14px; font-weight:800; color:#0ea5e9;">$${subtotalItem.toLocaleString('es-AR')}</div></div><div class="btn-delete-pos" onclick="borrarPresup('${g.key.replace(/'/g,"\\'")}')" title="Quitar una unidad">✖</div></div>`; }).join(''); if(desc > 0) div.innerHTML += `<div class="cart-item" style="color:var(--success);"><span style="flex:1;">Desc. (${desc}%)</span><span>-$${Math.round(descMonto).toLocaleString('es-AR')}</span><div style="width:28px;"></div></div>`; } document.getElementById('res-total-presup').innerText = Math.round(total).toLocaleString('es-AR'); div.scrollTop = div.scrollHeight; }
+    
+    function emitirPresupuestoNuevo() {
+        if(carritoPresup.length === 0) return alert("❌ Añadí productos primero.");
+        const { jsPDF } = window.jspdf; const doc = new jsPDF(); const c = document.getElementById('clie-presup').value || "Cliente General"; const obs = document.getElementById('obs-presup').value; const desc = parseFloat(document.getElementById('desc-presup').value) || 0; const subtotal = carritoPresup.reduce((s, i) => s + parseFloat(i.p || 0), 0); const descMonto = subtotal * (desc / 100); const total = subtotal - descMonto;
+        doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(14, 165, 233); doc.text("LECATEX EXPRESS - PRESUPUESTO", 15, 20); doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text("Villa Ballester", 15, 26); doc.setLineWidth(0.5); doc.line(15, 30, 195, 30); doc.setFontSize(11); doc.text(`Cliente: ${c}`, 15, 38); doc.text(`Fecha: ${new Date().toLocaleString('es-AR')}`, 15, 44); if(obs) doc.text(`Obs: ${obs}`, 15, 50);
+        let bodyRows = agruparCarritoPresup().map(g => [ `${g.item.n} ${g.item.c ? '- '+g.item.c : ''}`, g.cant, `$ ${parseFloat(g.item.p).toLocaleString('es-AR')}`, `$ ${(parseFloat(g.item.p)*g.cant).toLocaleString('es-AR')}` ]);
+        if(desc > 0) bodyRows.push([`Descuento (${desc}%)`, '', '', `-$ ${Math.round(descMonto).toLocaleString('es-AR')}`]);
+        doc.autoTable({ startY: obs ? 56 : 52, head: [['Producto / Detalle', 'Cant.', 'P. Unit.', 'Subtotal']], body: bodyRows, theme: 'grid', headStyles: { fillColor: [14, 165, 233], textColor: 255 }, columnStyles: { 1: { halign: 'center', cellWidth: 16 }, 2: { halign: 'right', cellWidth: 38 }, 3: { halign: 'right', cellWidth: 40 } } });
+        let y = doc.lastAutoTable.finalY + 10; doc.setFontSize(13); doc.setFont("helvetica", "bold"); doc.text("TOTAL PRESUPUESTO:", 130, y); doc.text(`$ ${Math.round(total).toLocaleString('es-AR')}`, 195, y, { align: "right" }); doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(120,120,120); doc.text("Presupuesto válido por 7 días. No genera deuda ni movimiento de stock.", 15, y + 10);
+        doc.save(`Presupuesto_${c.replace(/\s+/g,'_')}.pdf`); limpiarPresupuesto();
+    }
+    function limpiarPresupuesto() { carritoPresup = []; ['clie-presup','obs-presup','desc-presup','email-presup','tel-presup-campo','dir-presup-campo'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; }); actualizarCarritoPresup(); }
+
+    // ================== CIERRE DEL DÍA ==================
+    function cierreDelDia() {
+        const hoy = new Date(); hoy.setHours(0,0,0,0);
+        const ventasHoy = historialVentas.filter(v => { const f = new Date(v.fecha); f.setHours(0,0,0,0); const tipo = String(v.tipo || '').toLowerCase(); return f.getTime() === hoy.getTime() && !tipo.includes('pago'); });
+        const { jsPDF } = window.jspdf; const doc = new jsPDF(); const fechaStr = new Date().toLocaleDateString('es-AR', {weekday:'long', year:'numeric', month:'long', day:'numeric'}); const horaStr = new Date().toLocaleTimeString('es-AR');
+        doc.setFillColor(15, 23, 42); doc.rect(0, 0, 210, 40, 'F'); doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(255, 255, 255); doc.text("LECATEX EXPRESS", 105, 16, { align: "center" }); doc.setFontSize(11); doc.setFont("helvetica", "normal"); doc.text("CIERRE DEL DÍA", 105, 24, { align: "center" }); doc.setFontSize(9); doc.text(fechaStr.toUpperCase() + "  |  Hora de cierre: " + horaStr, 105, 32, { align: "center" }); doc.setTextColor(0, 0, 0);
+        if (ventasHoy.length === 0) { doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(150, 0, 0); doc.text("NO HUBO VENTAS EL DÍA DE HOY", 105, 100, { align: "center" }); doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(100, 100, 100); doc.text("No se registraron operaciones en esta fecha.", 105, 112, { align: "center" }); } else { const medios = {}; const tipos = { 'Factura C': 0, 'Ticket X': 0, 'pedido_fabrica_matriz': 0, 'otros': 0 }; let totalDia = 0; ventasHoy.forEach(v => { const mp = v.pago || 'Sin especificar'; if (!medios[mp]) medios[mp] = 0; medios[mp] += parseFloat(v.total || 0); totalDia += parseFloat(v.total || 0); const t = String(v.tipo || '').toLowerCase(); if (v.tipo === 'Factura C') tipos['Factura C']++; else if (v.tipo === 'Ticket X') tipos['Ticket X']++; else if (t.includes('fabrica')) tipos['pedido_fabrica_matriz']++; else tipos['otros']++; }); doc.setFillColor(239, 246, 255); doc.roundedRect(15, 46, 180, 22, 3, 3, 'F'); doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 64, 175); doc.text("TOTAL FACTURADO DEL DÍA:", 20, 57); doc.setFontSize(16); doc.text("$ " + Math.round(totalDia).toLocaleString('es-AR'), 190, 57, { align: "right" }); doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(80, 80, 80); doc.text(ventasHoy.length + " operación/es registrada/s", 20, 64); doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(0,0,0); doc.text("Desglose por medio de pago:", 15, 78); let yMedio = 85; Object.entries(medios).forEach(([mp, monto]) => { doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.text("• " + mp + ":", 20, yMedio); doc.setFont("helvetica", "bold"); doc.text("$ " + Math.round(monto).toLocaleString('es-AR'), 190, yMedio, { align: "right" }); yMedio += 7; }); doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.text("Desglose por tipo:", 15, yMedio + 5); yMedio += 12; const labelTipo = { 'Factura C': 'Facturas C', 'Ticket X': 'Tickets X', 'pedido_fabrica_matriz': 'Pedidos a Fábrica', 'otros': 'Otros' }; Object.entries(tipos).forEach(([t, cant]) => { if (cant === 0) return; doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.text("• " + labelTipo[t] + ": " + cant, 20, yMedio); yMedio += 7; }); doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(0,0,0); doc.text("Detalle de operaciones:", 15, yMedio + 5); doc.autoTable({ startY: yMedio + 10, head: [['Hora', 'Cliente', 'Tipo', 'Pago', 'Total']], body: ventasHoy.map(v => [ new Date(v.fecha).toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}), v.cliente || '-', v.tipo || '-', v.pago || '-', '$ ' + parseFloat(v.total || 0).toLocaleString('es-AR') ]), theme: 'grid', headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 8 }, bodyStyles: { fontSize: 8 }, columnStyles: { 4: { halign: 'right', fontStyle: 'bold' } } }); const yPie = doc.lastAutoTable.finalY + 15; doc.setLineWidth(0.5); doc.line(15, yPie, 90, yPie); doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(100,100,100); doc.text("Firma responsable de cierre", 15, yPie + 5); }
+        doc.save("Cierre_" + new Date().toLocaleDateString('es-AR').replace(/\//g,'-') + ".pdf");
+    }
+
+    // ================== VISTA 1: POS ==================
+    function filtrarPos() { const val = document.getElementById('bus').value.toLowerCase(); document.getElementById('lista-pos').innerHTML = db.map((i, idx) => { if (i.n.toLowerCase().includes(val) || (i.c && i.c.toLowerCase().includes(val))) { let colorStock = i.s < 0 ? 'var(--danger)' : (i.s > 0 ? 'var(--success)' : 'var(--text-muted)'); return `<div class="pos-card" onclick="agregarPos(${idx})"><div><div class="prod-title">${i.n}</div>${i.c ? `<div class="prod-sub">${i.c}</div>` : ''}</div><div><div class="prod-price">$${i.p.toLocaleString('es-AR')}</div><div class="stock-badge" style="color:${colorStock}; background:${i.s<0?'#fee2e2':(i.s>0?'#d1fae5':'#f1f5f9')}">${i.s}</div></div></div>`; } return ''; }).join(''); }
+    function agregarPos(idx) { carritoPos.push(db[idx]); actualizarCarritoPos(); }
+    function borrarPos(key) { let idx = carritoPos.findLastIndex ? carritoPos.findLastIndex(i => (i.n + '||' + i.c) === key) : (() => { for(let j=carritoPos.length-1;j>=0;j--) if((carritoPos[j].n+'||'+carritoPos[j].c)===key) return j; return -1; })(); if(idx !== -1) { carritoPos.splice(idx, 1); actualizarCarritoPos(); } }
+    function agruparCarritoPos() { const grupos = {}; carritoPos.forEach(item => { const key = item.n + '||' + item.c; if(!grupos[key]) grupos[key] = { item, cant: 0, key }; grupos[key].cant++; }); return Object.values(grupos); }
+    function calcularTotalPos() { const subtotal = carritoPos.reduce((suma, item) => suma + parseFloat(item.p || 0), 0); const descInput = document.getElementById('desc-pos').value; return subtotal - (subtotal * ((descInput ? parseFloat(descInput) : 0) / 100)); }
+    function actualizarCarritoPos() { const div = document.getElementById('carrito-pos'); const subtotal = carritoPos.reduce((suma, item) => suma + parseFloat(item.p || 0), 0); const descInput = document.getElementById('desc-pos').value; const montoDescuento = subtotal * ((descInput ? parseFloat(descInput) : 0) / 100); if(carritoPos.length === 0) { div.innerHTML = "<p style='text-align:center; color:var(--text-muted); margin-top: 50px; font-weight:600;'>El ticket está vacío</p>"; } else { const grupos = agruparCarritoPos(); div.innerHTML = grupos.map(g => { const precioUnit = parseFloat(g.item.p); const subtotalItem = precioUnit * g.cant; const nombre = g.item.n + (g.item.c ? ' - ' + g.item.c : ''); return `<div class="cart-item"><span style="flex:1; padding-right:6px; font-size:13px;">${nombre}</span><div style="text-align:right; margin-right:10px; white-space:nowrap;"><div style="font-size:11px; color:var(--text-muted);">$${precioUnit.toLocaleString('es-AR')} x${g.cant}</div><div style="font-size:14px; font-weight:800; color:var(--primary);">$${subtotalItem.toLocaleString('es-AR')}</div></div><div class="btn-delete-pos" onclick="borrarPos('${g.key.replace(/'/g,"\\'")}')" title="Quitar una unidad">✖</div></div>`; }).join(''); if(descInput > 0) div.innerHTML += `<div class="cart-item" style="color:var(--success);"><span style="flex:1;">Desc. (${descInput}%)</span><span>-$${Math.round(montoDescuento).toLocaleString('es-AR')}</span><div style="width:28px;"></div></div>`; } document.getElementById('res-total-pos').innerText = Math.round(subtotal - montoDescuento).toLocaleString('es-AR'); div.scrollTop = div.scrollHeight; }
+    
+    function procesarVentaPos(cliente, pago, tipoComprobante) {
+        let batch = dbFirestore.batch(); carritoPos.forEach(prod => { let ref = dbFirestore.collection("productos").doc(prod.id_db); batch.update(ref, { s: prod.s - 1 }); }); batch.commit();
+        let total = calcularTotalPos(); let costoTotalCalculado = 0; carritoPos.forEach(item => { let costo = parseFloat(item.pc); if(isNaN(costo) || costo === 0) costo = parseFloat(item.p) * 0.6; costoTotalCalculado += (costo || 0); });
+        const itemsVenta = agruparCarritoPos().map(g => ({ n: g.item.n, c: g.item.c || '', p: parseFloat(g.item.p), cant: g.cant }));
+        guardarVenta(cliente, Math.round(total), pago, tipoComprobante, Math.round(total), 0, Math.round(costoTotalCalculado), itemsVenta);
+    }
+
+    function emitirFactura() { if(carritoPos.length === 0) return alert("❌ Añadí productos primero."); procesarVentaPos(document.getElementById('clie-pos').value || "Consumidor Final", document.getElementById('pago-pos').value, 'Factura C'); alert(`✅ FACTURA C GENERADA Y STOCK DESCONTADO\nTotal: $${document.getElementById('res-total-pos').innerText}`); limpiarVentaPos(); }
+
+    function emitirTicketX() {
+        if(carritoPos.length === 0) return alert("❌ Añadí productos primero.");
+        const c = document.getElementById('clie-pos').value || "CONSUMIDOR FINAL";
+        const p = document.getElementById('pago-pos').value;
+        const grupos = agruparCarritoPos();
+        const desc = parseFloat(document.getElementById('desc-pos').value) || 0;
+        const subtotal = carritoPos.reduce((s,i) => s + parseFloat(i.p||0), 0);
+        const descMonto = subtotal * (desc/100);
+        const total = Math.round(subtotal - descMonto);
+        procesarVentaPos(c, p, 'Ticket X');
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const W = 210; // ancho A4
+        const fechaEmision = new Date().toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric'});
+        const nroComp = String(Math.floor(Math.random() * 9000000) + 1000000).padStart(8,'0');
+        const nroCompleto = '00001-' + nroComp;
+
+        // ── Borde exterior ──
+        doc.setLineWidth(0.5);
+        doc.rect(10, 10, 190, 267);
+
+        // ── Título TIQUE C ──
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.setTextColor(0,0,0);
+        doc.text("TIQUE C", 20, 24);
+
+        // ── Línea bajo título ──
+        doc.setLineWidth(0.3);
+        doc.line(10, 28, 200, 28);
+
+        // ── Comprobante Nº y fecha ──
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text("Comprobante Nº:", 20, 37);
+        doc.setFont("helvetica", "bold");
+        doc.text(nroCompleto, 65, 37);
+        doc.setFont("helvetica", "normal");
+        doc.text("Fecha de emisión:", 20, 44);
+        doc.setFont("helvetica", "bold");
+        doc.text(fechaEmision, 65, 44);
+
+        // ── Línea separadora ──
+        doc.setLineWidth(0.3);
+        doc.line(10, 48, 200, 48);
+
+        // ── Sección: Datos del emisor ──
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text("Datos del emisor", 20, 57);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text("LECATEX ZONA NORTE", 80, 54);
+        doc.text("LECATEX EXPRESS VILLA BALLESTER", 80, 60);
+        doc.text("CUIT  20-31144628-3", 80, 66);
+        doc.text("Ingresos Brutos  20311446283", 80, 72);
+        doc.text("RESPONSABLE MONOTRIBUTO", 80, 78);
+
+        // ── Línea separadora ──
+        doc.setLineWidth(0.3);
+        doc.line(10, 83, 200, 83);
+
+        // ── Sección: Datos del receptor ──
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text("Datos del receptor", 20, 92);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(c.toUpperCase(), 80, 89);
+        doc.text("A CONSUMIDOR FINAL", 80, 95);
+
+        // ── Línea separadora ──
+        doc.setLineWidth(0.3);
+        doc.line(10, 100, 200, 100);
+
+        // ── Tabla de productos ──
+        doc.autoTable({
+            startY: 104,
+            head: [['Descripción', 'Cant.', 'P. Unit.', 'Subtotal']],
+            body: grupos.map(g => [
+                g.item.n + (g.item.c ? ' - ' + g.item.c : ''),
+                g.cant,
+                '$ ' + parseFloat(g.item.p).toLocaleString('es-AR'),
+                '$ ' + (parseFloat(g.item.p) * g.cant).toLocaleString('es-AR')
+            ]),
+            theme: 'grid',
+            headStyles: { fillColor: [240,240,240], textColor: 0, fontStyle: 'bold', fontSize: 9 },
+            bodyStyles: { fontSize: 9, textColor: 0 },
+            columnStyles: {
+                1: { halign: 'center', cellWidth: 16 },
+                2: { halign: 'right', cellWidth: 38 },
+                3: { halign: 'right', cellWidth: 38, fontStyle: 'bold' }
+            },
+            margin: { left: 10, right: 10 },
+            tableLineColor: [0,0,0],
+            tableLineWidth: 0.2
+        });
+
+        let yF = doc.lastAutoTable.finalY;
+
+        // ── Descuento si aplica ──
+        if (desc > 0) {
+            yF += 6;
+            doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+            doc.text('Descuento (' + desc + '%):', 130, yF);
+            doc.text('-$ ' + Math.round(descMonto).toLocaleString('es-AR'), 195, yF, { align: 'right' });
+            yF += 2;
+        }
+
+        // ── Línea y total ──
+        doc.setLineWidth(0.3);
+        doc.line(10, yF + 5, 200, yF + 5);
+
+        doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+        doc.text("Importe total", 20, yF + 14);
+        doc.setTextColor(30, 100, 200);
+        doc.text("$ " + total.toLocaleString('es-AR'), 195, yF + 14, { align: "right" });
+        doc.setTextColor(0,0,0);
+
+        // ── Línea ──
+        doc.setLineWidth(0.3);
+        doc.line(10, yF + 18, 200, yF + 18);
+
+        // ── Leyenda NO VÁLIDO ──
+        doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+        doc.setTextColor(150,0,0);
+        doc.text("DOCUMENTO NO VÁLIDO COMO FACTURA — SOLO USO INTERNO", 105, yF + 25, { align: "center" });
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(100,100,100);
+        doc.text("La autorización de emisión de este comprobante sólo considera sus aspectos formales", 105, yF + 31, { align: "center" });
+        doc.text("y no implica reconocimiento alguno de la existencia y legitimidad de la operación.", 105, yF + 36, { align: "center" });
+
+        doc.save("TiqueC_" + c.replace(/\s+/g,'_') + "_" + nroCompleto + ".pdf");
+        limpiarVentaPos();
+    }
+    function limpiarVentaPos() { carritoPos = []; document.getElementById('clie-pos').value = ''; document.getElementById('desc-pos').value = ''; actualizarCarritoPos(); }
+
+    // ================== VISTA 1.5: PEDIDO FÁBRICA ==================
+    function filtrarFabrica() { const val = document.getElementById('bus-fabrica').value.toLowerCase(); document.getElementById('lista-fabrica').innerHTML = db.map((i, idx) => { if (i.n.toLowerCase().includes(val) || (i.c && i.c.toLowerCase().includes(val))) { let colorStock = i.s < 0 ? 'var(--danger)' : (i.s > 0 ? 'var(--success)' : 'var(--text-muted)'); let costoReal = parseFloat(i.pc); if(isNaN(costoReal) || costoReal === 0) costoReal = parseFloat(i.p) * 0.6; return `<div class="pos-card pos-card-purple" onclick="agregarFabrica(${idx})"><div><div class="prod-title">${i.n}</div>${i.c ? `<div class="prod-sub">${i.c}</div>` : ''}</div><div><div class="prod-price-cost">Costo: $${Math.round(costoReal).toLocaleString('es-AR')}</div><div class="prod-price prod-price-purple" style="font-size:14px;">Venta: $${parseFloat(i.p).toLocaleString('es-AR')}</div><div class="stock-badge" style="color:${colorStock}; background:${i.s<0?'#fee2e2':(i.s>0?'#d1fae5':'#f1f5f9')}">${i.s}</div></div></div>`; } return ''; }).join(''); }
+    function agregarFabrica(idx) { carritoFabrica.push(db[idx]); actualizarCarritoFabrica(); }
+    function borrarFabrica(idx) { carritoFabrica.splice(idx, 1); actualizarCarritoFabrica(); }
+    function actualizarCarritoFabrica() { const div = document.getElementById('carrito-fabrica'); let totalCosto = 0; let totalVenta = 0; carritoFabrica.forEach(item => { let costo = parseFloat(item.pc); if(isNaN(costo) || costo === 0) costo = parseFloat(item.p) * 0.6; totalCosto += (costo || 0); totalVenta += parseFloat(item.p || 0); }); if(carritoFabrica.length === 0) { div.innerHTML = "<p style='text-align:center; color:var(--text-muted); margin-top: 50px; font-weight:600;'>Ningún producto a pedir</p>"; } else { div.innerHTML = carritoFabrica.map((item, idx) => { let costo = parseFloat(item.pc); if(isNaN(costo) || costo === 0) costo = parseFloat(item.p) * 0.6; return `<div class="cart-item"><span style="flex:1; padding-right:10px; font-size:13px;">📦 ${item.n} ${item.c ? '- '+item.c : ''}</span><div style="text-align:right; margin-right: 10px;"><div style="color:var(--danger); font-size:12px; font-weight:700;">C: $${Math.round(costo).toLocaleString('es-AR')}</div><div style="color:var(--purple); font-size:12px;">V: $${parseFloat(item.p).toLocaleString('es-AR')}</div></div><div class="btn-delete-pos" onclick="borrarFabrica(${idx})">✖</div></div>`; }).join(''); } document.getElementById('res-total-fabrica').innerText = Math.round(totalCosto).toLocaleString('es-AR'); document.getElementById('res-costo-fabrica').innerText = Math.round(totalCosto).toLocaleString('es-AR'); document.getElementById('res-venta-fabrica').innerText = Math.round(totalVenta).toLocaleString('es-AR'); calcularSaldoFabrica(); div.scrollTop = div.scrollHeight; }
+    function calcularSaldoFabrica() { let totalCosto = 0; carritoFabrica.forEach(item => { let costo = parseFloat(item.pc); if(isNaN(costo) || costo === 0) costo = parseFloat(item.p) * 0.6; totalCosto += (costo || 0); }); const abonoStr = document.getElementById('abono-fabrica').value; const abono = abonoStr ? parseFloat(abonoStr) : 0; let saldo = totalCosto - abono; const saldoSpan = document.getElementById('saldo-fabrica'); if (saldo <= 0) { saldoSpan.innerText = "Pago Completo"; saldoSpan.style.color = "var(--success)"; } else if (abono === 0) { saldoSpan.innerText = "NO ABONADO — Resta: $" + Math.round(totalCosto).toLocaleString('es-AR'); saldoSpan.style.color = "var(--danger)"; } else { saldoSpan.innerText = "Resta $" + Math.round(saldo).toLocaleString('es-AR'); saldoSpan.style.color = "var(--danger)"; } }
+    function generarPedidoFabrica() {
+        if(carritoFabrica.length === 0) return alert("❌ Añadí productos al pedido."); const c = document.getElementById('clie-fabrica').value || "Cliente General"; const p = document.getElementById('pago-fabrica').value;
+        let costoTotal = 0; let ventaTotal = 0; carritoFabrica.forEach(item => { let costo = parseFloat(item.pc); if(isNaN(costo) || costo === 0) costo = parseFloat(item.p) * 0.6; costoTotal += (costo || 0); ventaTotal += parseFloat(item.p || 0); }); costoTotal = Math.round(costoTotal); ventaTotal = Math.round(ventaTotal);
+        const abono = document.getElementById('abono-fabrica').value ? parseFloat(document.getElementById('abono-fabrica').value) : 0; let saldoDeuda = costoTotal - abono; if(saldoDeuda < 0) saldoDeuda = 0;
+        let batch = dbFirestore.batch(); carritoFabrica.forEach(prod => { let ref = dbFirestore.collection("productos").doc(prod.id_db); batch.update(ref, { s: prod.s - 1 }); }); batch.commit();
+        guardarVenta(c, ventaTotal, p, 'pedido_fabrica_matriz', Math.round(abono), saldoDeuda, costoTotal);
+        const { jsPDF } = window.jspdf; const fechaHora = new Date().toLocaleString('es-AR');
+        const docCliente = new jsPDF(); docCliente.setFont("helvetica", "bold"); docCliente.setFontSize(16); docCliente.setTextColor(139, 92, 246); docCliente.text("COMPROBANTE DE PEDIDO - LECATEX EXPRESS", 15, 20); docCliente.setTextColor(0, 0, 0); docCliente.setFont("helvetica", "normal"); docCliente.setFontSize(10); docCliente.text("Villa Ballester", 15, 26); docCliente.setLineWidth(0.5); docCliente.line(15, 30, 195, 30); docCliente.setFontSize(11); docCliente.text(`Cliente: ${c}`, 15, 38); docCliente.text(`Fecha del Pedido: ${fechaHora}`, 15, 44); if (abono === 0) { docCliente.setFont("helvetica", "bold"); docCliente.setTextColor(239, 68, 68); docCliente.text("ESTADO: PEDIDO AÚN NO ABONADO", 15, 52); docCliente.setTextColor(0, 0, 0); } else if (saldoDeuda === 0) { docCliente.setFont("helvetica", "bold"); docCliente.setTextColor(16, 185, 129); docCliente.text("ESTADO: PAGO COMPLETO", 15, 52); docCliente.setTextColor(0, 0, 0); } docCliente.autoTable({ startY: 58, head: [['Producto Pedido', 'Precio Venta']], body: carritoFabrica.map(item => [`${item.n} ${item.c ? '- '+item.c : ''}`, `$ ${parseFloat(item.p).toLocaleString('es-AR')}`]), theme: 'grid', headStyles: { fillColor: [139, 92, 246] }, columnStyles: { 1: { halign: 'right', cellWidth: 45 } } }); let yCl = docCliente.lastAutoTable.finalY + 10; docCliente.setFontSize(11); docCliente.setFont("helvetica", "normal"); docCliente.text("Total del Pedido:", 130, yCl); docCliente.text(`$ ${ventaTotal.toLocaleString('es-AR')}`, 195, yCl, { align: "right" }); yCl += 7; docCliente.text("Abono / Seña entregada:", 130, yCl); docCliente.text(`$ ${Math.round(abono).toLocaleString('es-AR')}`, 195, yCl, { align: "right" }); yCl += 9; docCliente.setFontSize(12); docCliente.setFont("helvetica", "bold"); let saldoCliente = ventaTotal - abono; if (saldoCliente > 0 && abono > 0) { docCliente.setTextColor(239, 68, 68); docCliente.text("RESTA:", 130, yCl); docCliente.text(`$ ${Math.round(saldoCliente).toLocaleString('es-AR')}`, 195, yCl, { align: "right" }); } else if (abono === 0) { docCliente.setTextColor(239, 68, 68); docCliente.text("PEDIDO AÚN NO ABONADO", 130, yCl); } else { docCliente.setTextColor(16, 185, 129); docCliente.text("PAGO COMPLETO", 130, yCl); } docCliente.save(`Comprobante_Pedido_${c.replace(/\s+/g, '_')}.pdf`);
+        const docFabrica = new jsPDF(); docFabrica.setFont("helvetica", "bold"); docFabrica.setFontSize(16); docFabrica.text("SOLICITUD DE MERCADERÍA - LECATEX", 15, 20); docFabrica.setFont("helvetica", "normal"); docFabrica.setFontSize(10); docFabrica.text(`Fecha: ${fechaHora} | Ref. Cliente: ${c}`, 15, 26); docFabrica.setLineWidth(0.5); docFabrica.line(15, 30, 195, 30); let conteoProductos = {}; carritoFabrica.forEach(prod => { let key = `${prod.n} ${prod.c ? '- '+prod.c : ''}`; let costo = parseFloat(prod.pc); if(isNaN(costo) || costo === 0) costo = parseFloat(prod.p) * 0.6; if (!conteoProductos[key]) conteoProductos[key] = { cant: 0, costo: costo, venta: parseFloat(prod.p) }; conteoProductos[key].cant += 1; }); docFabrica.autoTable({ startY: 38, head: [['Cant.', 'Descripción del Producto', 'P. Costo Unit.', 'P. Venta Unit.']], body: Object.keys(conteoProductos).map(k => [ conteoProductos[k].cant, k, `$ ${Math.round(conteoProductos[k].costo).toLocaleString('es-AR')}`, `$ ${Math.round(conteoProductos[k].venta).toLocaleString('es-AR')}` ]), theme: 'grid', headStyles: { fillColor: [51, 65, 85] }, columnStyles: { 0: { halign: 'center', cellWidth: 18, fontStyle: 'bold' }, 2: { halign: 'right', cellWidth: 40 }, 3: { halign: 'right', cellWidth: 40 } } }); let yF = docFabrica.lastAutoTable.finalY + 8; docFabrica.setLineWidth(0.3); docFabrica.line(15, yF, 195, yF); yF += 8; docFabrica.setFontSize(11); docFabrica.setFont("helvetica", "normal"); docFabrica.setTextColor(180, 0, 0); docFabrica.text("TOTAL COSTO (Deuda generada a Fábrica):", 15, yF); docFabrica.setFont("helvetica", "bold"); docFabrica.text(`$ ${costoTotal.toLocaleString('es-AR')}`, 195, yF, { align: "right" }); yF += 8; docFabrica.setTextColor(80, 80, 80); docFabrica.setFont("helvetica", "normal"); docFabrica.text("Total Precio Venta al Cliente:", 15, yF); docFabrica.setFont("helvetica", "bold"); docFabrica.text(`$ ${ventaTotal.toLocaleString('es-AR')}`, 195, yF, { align: "right" }); yF += 8; docFabrica.setTextColor(0, 120, 60); docFabrica.setFont("helvetica", "bold"); docFabrica.text(`Ganancia bruta estimada: $ ${(ventaTotal - costoTotal).toLocaleString('es-AR')}`, 15, yF); docFabrica.setTextColor(0,0,0); docFabrica.save(`A_Fabrica_${c.replace(/\s+/g, '_')}.pdf`);
+        alert(`✅ Pedido guardado en la nube.\n\n🏭 Deuda en Cuenta Corriente: $${costoTotal.toLocaleString('es-AR')}\n💰 Total venta: $${ventaTotal.toLocaleString('es-AR')}`); carritoFabrica = []; document.getElementById('clie-fabrica').value = ''; document.getElementById('abono-fabrica').value = ''; actualizarCarritoFabrica();
+    }
+
+    // ================== VISTA 6: DEUDA A FÁBRICA ==================
+    function registrarPagoManualFabrica() { const inputMonto = document.getElementById('monto-pago-manual'); const monto = parseFloat(inputMonto.value); if (isNaN(monto) || monto <= 0) return alert("❌ Ingresá un monto válido mayor a 0."); if(confirm(`¿Confirmás que realizaste un pago/transferencia a la fábrica por $${monto.toLocaleString('es-AR')}?`)) { dbFirestore.collection("ventas").add({ id: Date.now(), fecha: new Date().toISOString(), cliente: 'TRANSFERENCIA A MATRIZ', total: 0, tipo: 'pago_a_fabrica_matriz', montoPagoFabrica: monto }); inputMonto.value = ''; alert("✅ Pago registrado en la nube."); } }
+    function esPedidoFabrica(v) { if (!v || !v.tipo) return false; let t = String(v.tipo).toLowerCase().replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u'); return (t.includes('pedido') || t.includes('fabrica') || t.includes('fabri')) && !t.includes('pago'); }
+    function esPagoFabrica(v) { if (!v || !v.tipo) return false; let t = String(v.tipo).toLowerCase().replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u'); return t.includes('pago') && (t.includes('fabrica') || t.includes('fabri') || t.includes('matriz')); }
+    function mostrarDeudaFabrica() { const tbody = document.getElementById('tabla-deuda-body'); let totalDeuda = 0; let totalPagado = 0; let saldoAcumulado = 0; let filas = []; [...historialVentas].forEach(v => { let fecha = new Date(v.fecha).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'}); if (esPedidoFabrica(v)) { let costo = parseFloat(v.costoTotal); if (isNaN(costo) || costo <= 0) costo = Math.round(parseFloat(v.total || 0) * 0.73); if (isNaN(costo)) costo = 0; totalDeuda += costo; saldoAcumulado += costo; let saldadoHistorico = (v.pagadoFabrica === true || v.pagadoFabrica === "true"); if (saldadoHistorico) { totalPagado += costo; saldoAcumulado -= costo; } filas.push({fecha: v.fecha, html: `<tr><td>${fecha}</td><td><strong>📦 Pedido:</strong> ${v.cliente || 'Fábrica'}<br><span style="font-size:11px; color:var(--text-muted);">Venta al cliente: $${parseFloat(v.total||0).toLocaleString('es-AR')}</span></td><td style="text-align:right; color:var(--danger); font-weight:bold;">+$${Math.round(costo).toLocaleString('es-AR')}</td><td style="text-align:right; color:var(--text-muted);">—</td><td style="text-align:right; font-weight:bold;">$${Math.round(saldoAcumulado).toLocaleString('es-AR')}</td></tr>`}); if (saldadoHistorico) { filas.push({fecha: v.fecha, html: `<tr style="background:#f0fdf4;"><td>${fecha}</td><td style="color:var(--success);"><strong>✔️ Saldado:</strong> ${v.cliente}</td><td style="text-align:right; color:var(--text-muted);">—</td><td style="text-align:right; color:var(--success); font-weight:bold;">-$${Math.round(costo).toLocaleString('es-AR')}</td><td style="text-align:right; font-weight:bold;">$${Math.round(saldoAcumulado).toLocaleString('es-AR')}</td></tr>`}); } } else if (esPagoFabrica(v)) { let pago = parseFloat(v.montoPagoFabrica) || 0; totalPagado += pago; saldoAcumulado -= pago; filas.push({fecha: v.fecha, html: `<tr style="background:#f0fdf4;"><td>${fecha}</td><td style="color:var(--success);"><strong>💸 PAGO:</strong> ${v.cliente}</td><td style="text-align:right; color:var(--text-muted);">—</td><td style="text-align:right; color:var(--success); font-weight:bold;">-$${Math.round(pago).toLocaleString('es-AR')}</td><td style="text-align:right; font-weight:bold;">$${Math.round(saldoAcumulado).toLocaleString('es-AR')}</td></tr>`}); } }); filas.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); tbody.innerHTML = filas.map(f => f.html).join('') || `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">Sin movimientos registrados</td></tr>`; let saldoFinal = totalDeuda - totalPagado; if (isNaN(saldoFinal)) saldoFinal = 0; document.getElementById('total-deuda-fabrica').innerText = Math.abs(saldoFinal).toLocaleString('es-AR'); const cajaSaldo = document.getElementById('caja-saldo-fabrica'); const titSaldo = document.getElementById('titulo-saldo-fabrica'); const numSaldo = document.getElementById('total-deuda-fabrica'); if(saldoFinal <= 0 && (totalDeuda > 0 || totalPagado > 0)) { cajaSaldo.style.backgroundColor = '#ecfdf5'; cajaSaldo.style.borderColor = '#10b981'; titSaldo.innerHTML = '<strong>Saldo a Favor / Al Día:</strong>'; titSaldo.style.color = '#065f46'; numSaldo.style.color = '#059669'; } else if (saldoFinal <= 0 && totalDeuda === 0) { cajaSaldo.style.backgroundColor = '#f8fafc'; cajaSaldo.style.borderColor = '#cbd5e1'; titSaldo.innerHTML = '<strong>Sin movimientos registrados:</strong>'; titSaldo.style.color = '#475569'; numSaldo.style.color = '#475569'; } else { cajaSaldo.style.backgroundColor = '#fee2e2'; cajaSaldo.style.borderColor = '#ef4444'; titSaldo.innerHTML = '<strong>Total Deuda Pendiente a Pagar:</strong>'; titSaldo.style.color = '#991b1b'; numSaldo.style.color = '#b91c1c'; } }
+
+    // ================== VISTAS STOCK Y REPORTES ==================
+    function filtrarStock() { const val = document.getElementById('bus-stock').value.toLowerCase(); document.getElementById('lista-stock').innerHTML = db.map((i, idx) => { if (i.n.toLowerCase().includes(val) || (i.c && i.c.toLowerCase().includes(val))) { return `<div class="list-card"><div><div style="font-weight:800;">${i.n}</div><div style="font-size:13px; color:var(--text-muted);">${i.c || ''}</div><div style="margin-top:5px; font-size:12px; font-weight:bold; color:${i.s<0?'var(--danger)':'var(--success)'}">Stock Actual: ${i.s}</div></div><div style="display:flex; gap:10px;"><input type="number" id="qty-${idx}" placeholder="Cant." style="width:80px; text-align:center;"><button class="btn-ingresar" onclick="sumarStock(${idx})">Sumar</button></div></div>`; } return ''; }).join(''); }
+    function sumarStock(idx) { const qty = parseInt(document.getElementById(`qty-${idx}`).value); if(isNaN(qty) || qty <= 0) return alert("❌ Ingresá cantidad válida."); let prod = db[idx]; dbFirestore.collection("productos").doc(prod.id_db).update({ s: prod.s + qty }).then(() => { alert(`✅ Stock cargado y sincronizado en la nube.`); }); }
+    function guardarProducto() { const t = document.getElementById('nuevo-tipo').value.trim(); const c = document.getElementById('nuevo-color').value.trim(); const p = parseFloat(document.getElementById('nuevo-precio').value); let pc = parseFloat(document.getElementById('nuevo-costo').value); if (!t || isNaN(p) || p <= 0) return alert("❌ Faltan datos (Tipo o Precio Público)."); if (isNaN(pc) || pc <= 0) pc = Math.round(p * 0.6); dbFirestore.collection("productos").add({ n: t, c: c, p: p, pc: pc, s: 0, orden: Date.now() }); alert(`✅ Producto guardado en la nube.\nCosto Fábrica: $${pc} | Venta: $${p}`); document.getElementById('nuevo-tipo').value = ''; document.getElementById('nuevo-color').value = ''; document.getElementById('nuevo-precio').value = ''; document.getElementById('nuevo-costo').value = ''; cambiarPestana('pos'); }
+    function mostrarReporteStock() { const f = document.getElementById('filtro-reporte').value; let html = ''; db.forEach((i, idx) => { if (f === 'negativos' && i.s >= 0) return; if (f === 'positivos' && i.s <= 0) return; html += `<tr><td><strong>${i.n}</strong></td><td>${i.c || '-'}</td><td style="text-align:right; color:#64748b;">$${(parseFloat(i.pc)||0).toLocaleString('es-AR')}</td><td style="text-align:right;">$${parseFloat(i.p).toLocaleString('es-AR')}</td><td style="text-align:center; font-weight:800; color:${i.s<0?'var(--danger)':'var(--success)'};">${i.s}</td><td style="text-align:center;"><button onclick="editarPrecio('${i.id_db}','${(i.n+' '+(i.c||'')).replace(/'/g,'').trim()}',${i.p},${i.pc||0})" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;">✏️ Editar</button></td></tr>`; }); document.getElementById('tabla-reportes-body').innerHTML = html || `<tr><td colspan="6" style="text-align:center;">Sin resultados</td></tr>`; }
+    function descargarReporteStockPDF() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); const f = document.getElementById('filtro-reporte').value; let dPDF = db.filter(i => { if (f === 'negativos') return i.s < 0; if (f === 'positivos') return i.s > 0; return true; }); doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text("REPORTE DE INVENTARIO - LECATEX EXPRESS", 15, 20); doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(`Fecha: ${new Date().toLocaleString('es-AR')}`, 15, 26); doc.autoTable({ startY: 32, head: [['Categoría', 'Detalle', 'Precio Costo', 'Precio Público', 'Stock']], body: dPDF.map(i => [i.n, i.c || '-', `$${(parseFloat(i.pc)||0).toLocaleString('es-AR')}`, `$${parseFloat(i.p).toLocaleString('es-AR')}`, i.s.toString()]), theme: 'grid', headStyles: { fillColor: [51, 65, 85] }, columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'center', fontStyle: 'bold' } }, didParseCell: function(data) { if (data.section === 'body' && data.column.index === 4) { let s = parseInt(data.cell.raw); if (s < 0) data.cell.styles.textColor = [239, 68, 68]; else if (s > 0) data.cell.styles.textColor = [16, 185, 129]; } } }); doc.save(`Inventario_${f}.pdf`); }
+    function obtenerFechaInicio(filtro) { const hoy = new Date(); hoy.setHours(0,0,0,0); if (filtro === 'hoy') return hoy; if (filtro === 'semana') return new Date(hoy.setDate(hoy.getDate() - 7)); if (filtro === 'mes') return new Date(new Date().getFullYear(), new Date().getMonth(), 1); if (filtro === 'año') return new Date(new Date().getFullYear(), 0, 1); return new Date(2000, 0, 1); }
+    function mostrarReporteVentas() {
+        const fInicio = obtenerFechaInicio(document.getElementById('filtro-ventas').value);
+        let html = ''; let sT = 0;
+        [...historialVentas].reverse().forEach((v, idx) => {
+            let fVenta = new Date(v.fecha);
+            let tipo = String(v.tipo).toLowerCase();
+            if (fVenta >= fInicio && !tipo.includes('pago')) {
+                sT += parseFloat(v.total) || 0;
+                let cC = (v.tipo === 'Factura C' || v.tipo === 'Ticket X') ? 'var(--success)' : (tipo.includes('brica') ? 'var(--purple)' : 'var(--text-muted)');
+                let ab = v.abonado !== undefined ? parseFloat(v.abonado) : parseFloat(v.total);
+                let sal = v.restante !== undefined ? parseFloat(v.restante) : 0;
+                let bSal = sal === 0 ? `<span style="color:var(--success)">Pago Completo</span>` : (ab === 0 ? `<span style="color:var(--danger)">No Abonado</span>` : `<span style="color:var(--danger)">Resta $${sal.toLocaleString('es-AR')}</span>`);
+                // Botón PDF solo para tipos que tienen comprobante
+                let btnPDF = '';
+                const nt = tipo.replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+                if (v.tipo === 'Ticket X') {
+                    btnPDF = `<button onclick="regenerarPDF(${JSON.stringify(v).replace(/"/g,'&quot;')})" style="background:#334155;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">📄 Tique</button>`;
+                } else if (v.tipo === 'Factura C') {
+                    btnPDF = `<button onclick="regenerarPDF(${JSON.stringify(v).replace(/"/g,'&quot;')})" style="background:#10b981;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">📄 FC</button>`;
+                } else if (nt.includes('pedido') || nt.includes('fabrica')) {
+                    btnPDF = `<button onclick="regenerarPDF(${JSON.stringify(v).replace(/"/g,'&quot;')})" style="background:#8b5cf6;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">📄 Pedido</button>`;
+                } else if (v.tipo === 'Presupuesto' || nt.includes('presup')) {
+                    btnPDF = `<button onclick="regenerarPDF(${JSON.stringify(v).replace(/"/g,'&quot;')})" style="background:#0ea5e9;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">📄 Presup.</button>`;
+                } else {
+                    btnPDF = `<span style="color:var(--text-muted);font-size:11px;">—</span>`;
+                }
+                html += `<tr>
+                    <td>${fVenta.toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'})}</td>
+                    <td><strong>${v.cliente}</strong></td>
+                    <td><span style="background:${cC}; color:white; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:800;">${v.tipo}</span></td>
+                    <td style="text-align:right;">$${parseFloat(v.total).toLocaleString('es-AR')}</td>
+                    <td style="text-align:right;">$${ab.toLocaleString('es-AR')}</td>
+                    <td style="text-align:center; font-weight:bold;">${bSal}</td>
+                    <td style="text-align:center;">${btnPDF}</td>
+                </tr>`;
+            }
+        });
+        document.getElementById('tabla-ventas-body').innerHTML = html || `<tr><td colspan="7" style="text-align:center;">Sin ventas registradas en este periodo</td></tr>`;
+        document.getElementById('total-ventas-periodo').innerText = sT.toLocaleString('es-AR');
+    }
+    function descargarReporteVentasPDF() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); const f = document.getElementById('filtro-ventas').value; let fIni = obtenerFechaInicio(f); let dPDF = [...historialVentas].reverse().filter(v => new Date(v.fecha) >= fIni && !String(v.tipo).toLowerCase().includes('pago')); let sT = dPDF.reduce((s, v) => s + parseFloat(v.total || 0), 0); doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text("REPORTE DE VENTAS - LECATEX", 15, 20); doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(`Fecha: ${new Date().toLocaleString('es-AR')}`, 15, 26); doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(245, 158, 11); doc.text(`Total Operaciones: $${sT.toLocaleString('es-AR')}`, 15, 33); doc.autoTable({ startY: 38, head: [['Fecha', 'Cliente', 'Tipo', 'Total', 'Abonado', 'Estado']], body: dPDF.map(v => { let ab = v.abonado !== undefined ? parseFloat(v.abonado) : parseFloat(v.total); let sal = v.restante !== undefined ? parseFloat(v.restante) : 0; let e = sal === 0 ? "Pagado" : (ab === 0 ? "No Abonado" : `Resta $${sal.toLocaleString('es-AR')}`); return [new Date(v.fecha).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'}), v.cliente, v.tipo, `$${parseFloat(v.total).toLocaleString('es-AR')}`, `$${ab.toLocaleString('es-AR')}`, e]; }), theme: 'grid', headStyles: { fillColor: [245, 158, 11] }, columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'center', fontStyle: 'bold' } }, didParseCell: function(data) { if (data.section === 'body' && data.column.index === 5) { if (data.cell.raw === "Pagado") data.cell.styles.textColor = [16, 185, 129]; else data.cell.styles.textColor = [239, 68, 68]; } } }); doc.save(`Ventas_${f}.pdf`); }
+
+    // ══════════ EDITAR PRECIO PRODUCTO ══════════
+    function editarPrecio(id_db, nombre, precioActual, costoActual) {
+        const nuevoPrecio = prompt(`✏️ EDITAR PRECIO\n\nProducto: ${nombre}\nPrecio actual: $${precioActual.toLocaleString('es-AR')}\n\nIngresá el NUEVO precio de venta:`, precioActual);
+        if (nuevoPrecio === null) return;
+        const p = parseFloat(nuevoPrecio);
+        if (isNaN(p) || p <= 0) return alert('❌ Precio inválido.');
+
+        const nuevoCosto = prompt(`💰 Nuevo precio de COSTO (fábrica):\nActual: $${costoActual.toLocaleString('es-AR')}\n\n(Presioná OK para mantener el actual)`, costoActual);
+        const pc = nuevoCosto !== null && parseFloat(nuevoCosto) > 0 ? parseFloat(nuevoCosto) : costoActual;
+
+        dbFirestore.collection('productos').doc(id_db).update({ p: p, pc: pc })
+            .then(() => {
+                alert(`✅ Precio actualizado.\nNuevo precio: $${p.toLocaleString('es-AR')}\nNuevo costo: $${pc.toLocaleString('es-AR')}`);
+                mostrarReporteStock();
+            })
+            .catch(e => alert('❌ Error al actualizar: ' + e.message));
+    }
+
+    // ══════════ ALERTA STOCK BAJO ══════════
+    function actualizarBadgeStock() {
+        const faltantes = db.filter(p => p.s <= 2).length;
+        const badge = document.getElementById('badge-stock');
+        if (!badge) return;
+        if (faltantes > 0) {
+            badge.style.display = 'inline-block';
+            badge.innerText = faltantes;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // ══════════ CIERRE DEL DÍA ══════════
+    function cierreDelDia() {
+        const hoy = new Date(); hoy.setHours(0,0,0,0);
+        const ventasHoy = historialVentas.filter(v => {
+            const f = new Date(v.fecha); f.setHours(0,0,0,0);
+            const tipo = String(v.tipo || '').toLowerCase();
+            return f.getTime() === hoy.getTime() && !tipo.includes('pago');
+        });
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const fechaStr = new Date().toLocaleDateString('es-AR', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+        const horaStr = new Date().toLocaleTimeString('es-AR');
+
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(255,255,255);
+        doc.text("LECATEX EXPRESS", 105, 16, { align: "center" });
+        doc.setFontSize(11); doc.setFont("helvetica", "normal");
+        doc.text("CIERRE DEL DÍA", 105, 24, { align: "center" });
+        doc.setFontSize(9);
+        doc.text(fechaStr.toUpperCase() + "  |  Cierre: " + horaStr, 105, 32, { align: "center" });
+        doc.setTextColor(0,0,0);
+
+        if (ventasHoy.length === 0) {
+            doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(150,0,0);
+            doc.text("NO HUBO VENTAS EL DÍA DE HOY", 105, 100, { align: "center" });
+            doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(100,100,100);
+            doc.text("No se registraron operaciones en esta fecha.", 105, 112, { align: "center" });
+        } else {
+            const medios = {}; let totalDia = 0;
+            const tipos = { 'Factura C': 0, 'Ticket X': 0, 'Pedidos Fábrica': 0, 'Otros': 0 };
+            ventasHoy.forEach(v => {
+                const mp = v.pago || 'Sin especificar';
+                medios[mp] = (medios[mp] || 0) + parseFloat(v.total || 0);
+                totalDia += parseFloat(v.total || 0);
+                const t = String(v.tipo || '').toLowerCase();
+                if (v.tipo === 'Factura C') tipos['Factura C']++;
+                else if (v.tipo === 'Ticket X') tipos['Ticket X']++;
+                else if (t.includes('fabrica')) tipos['Pedidos Fábrica']++;
+                else tipos['Otros']++;
+            });
+
+            doc.setFillColor(239, 246, 255);
+            doc.roundedRect(15, 46, 180, 22, 3, 3, 'F');
+            doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 64, 175);
+            doc.text("TOTAL FACTURADO DEL DÍA:", 20, 57);
+            doc.setFontSize(16); doc.text("$ " + Math.round(totalDia).toLocaleString('es-AR'), 190, 57, { align: "right" });
+            doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(80,80,80);
+            doc.text(ventasHoy.length + " operación/es", 20, 64);
+
+            doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(0,0,0);
+            doc.text("Por medio de pago:", 15, 78);
+            let yM = 85;
+            Object.entries(medios).forEach(([mp, monto]) => {
+                doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+                doc.text("• " + mp + ":", 20, yM);
+                doc.setFont("helvetica", "bold");
+                doc.text("$ " + Math.round(monto).toLocaleString('es-AR'), 190, yM, { align: "right" });
+                yM += 7;
+            });
+
+            doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+            doc.text("Por tipo de comprobante:", 15, yM + 5); yM += 12;
+            Object.entries(tipos).forEach(([t, n]) => {
+                if (n === 0) return;
+                doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+                doc.text("• " + t + ": " + n, 20, yM); yM += 7;
+            });
+
+            doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(0,0,0);
+            doc.text("Detalle de operaciones:", 15, yM + 5);
+            doc.autoTable({
+                startY: yM + 10,
+                head: [['Hora', 'Cliente', 'Tipo', 'Pago', 'Total']],
+                body: ventasHoy.map(v => [
+                    new Date(v.fecha).toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}),
+                    v.cliente || '-', v.tipo || '-', v.pago || '-',
+                    '$ ' + parseFloat(v.total||0).toLocaleString('es-AR')
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [15,23,42], textColor: 255, fontSize: 8 },
+                bodyStyles: { fontSize: 8 },
+                columnStyles: { 4: { halign: 'right', fontStyle: 'bold' } }
+            });
+            const yPie = doc.lastAutoTable.finalY + 15;
+            doc.setLineWidth(0.5); doc.line(15, yPie, 90, yPie);
+            doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(100,100,100);
+            doc.text("Firma responsable de cierre", 15, yPie + 5);
+        }
+        doc.save("Cierre_" + new Date().toLocaleDateString('es-AR').replace(/\//g,'-') + ".pdf");
+    }
+
+    // ══════════ WHATSAPP PRESUPUESTO ══════════
+    function enviarPresupuestoGmail() {
+        if(carritoPresup.length === 0) return alert("❌ El presupuesto está vacío.");
+        const c = document.getElementById('clie-presup').value || "Cliente";
+        const emailDest = document.getElementById('email-presup').value.trim();
+        const obs = document.getElementById('obs-presup').value.trim();
+        const desc = parseFloat(document.getElementById('desc-presup').value) || 0;
+        const subtotal = carritoPresup.reduce((s,i) => s + parseFloat(i.p||0), 0);
+        const descMonto = subtotal * (desc/100);
+        const total = subtotal - descMonto;
+        const grupos = agruparCarritoPresup();
+        const fecha = new Date().toLocaleDateString('es-AR');
+
+        // Asunto
+        const asunto = `Presupuesto Lecatex Express - ${c} - ${fecha}`;
+
+        // Cuerpo del mail (texto plano, Gmail lo muestra bien)
+        let cuerpo = `Estimado/a ${c},
+
+`;
+        cuerpo += `Le hacemos llegar el siguiente presupuesto:
+
+`;
+        cuerpo += `─────────────────────────────
+`;
+        cuerpo += `PRESUPUESTO - LECATEX EXPRESS
+`;
+        cuerpo += `Villa Ballester | Fecha: ${fecha}
+`;
+        cuerpo += `─────────────────────────────
+
+`;
+        grupos.forEach(g => {
+            const sub = parseFloat(g.item.p) * g.cant;
+            cuerpo += `• ${g.item.n}${g.item.c?' - '+g.item.c:''}
+`;
+            cuerpo += `  Cant: ${g.cant}  |  P. Unit: $${parseFloat(g.item.p).toLocaleString('es-AR')}  |  Subtotal: $${sub.toLocaleString('es-AR')}
+
+`;
+        });
+        if(desc > 0) cuerpo += `Descuento (${desc}%): -$${Math.round(descMonto).toLocaleString('es-AR')}
+`;
+        cuerpo += `─────────────────────────────
+`;
+        cuerpo += `TOTAL: $${Math.round(total).toLocaleString('es-AR')}
+`;
+        cuerpo += `─────────────────────────────
+
+`;
+        if(obs) cuerpo += `Observaciones: ${obs}
+
+`;
+        cuerpo += `Presupuesto válido por 7 días hábiles.
+
+`;
+        cuerpo += `Ante cualquier consulta no dude en contactarnos.
+
+`;
+        cuerpo += `Saludos,
+Lecatex Express
+Villa Ballester, Buenos Aires`;
+
+        // Armar URL de Gmail compose
+        const gmailUrl = 'https://mail.google.com/mail/?view=cm'
+            + '&to=' + encodeURIComponent(emailDest)
+            + '&su=' + encodeURIComponent(asunto)
+            + '&body=' + encodeURIComponent(cuerpo);
+
+        const a = document.createElement('a');
+        a.href = gmailUrl;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+
+    // ══════════════════════════════════════════════
+    //  DASHBOARD
+    // ══════════════════════════════════════════════
+    let dashPeriodo = 'hoy';
+
+    function setDashPeriodo(p, btn) {
+        dashPeriodo = p;
+        document.querySelectorAll('.dash-filtro button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderDashboard();
+    }
+
+    function dashFechaInicio(periodo) {
+        const hoy = new Date(); hoy.setHours(0,0,0,0);
+        if (periodo === 'hoy') return hoy;
+        if (periodo === 'semana') { const d = new Date(hoy); d.setDate(d.getDate()-7); return d; }
+        if (periodo === 'mes') return new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        if (periodo === 'año') return new Date(hoy.getFullYear(), 0, 1);
+        return new Date(2000,0,1);
+    }
+
+    function normTipo(t) {
+        return String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    }
+
+    function renderDashboard() {
+        const fInicio = dashFechaInicio(dashPeriodo);
+
+        const ventas = historialVentas.filter(v => {
+            const nt = normTipo(v.tipo);
+            return new Date(v.fecha) >= fInicio && !nt.includes('pago');
+        });
+
+        let totalFact = 0, totalGanancia = 0;
+        const mediosPago = {};
+        const productosVendidos = {};
+
+        ventas.forEach(v => {
+            const t = parseFloat(v.total || 0);
+            const c = parseFloat(v.costoTotal || 0);
+            totalFact += t;
+            totalGanancia += (t - c);
+            const mp = v.pago || 'Sin especificar';
+            mediosPago[mp] = (mediosPago[mp] || 0) + t;
+            // items guardados desde esta versión
+            if (v.items && Array.isArray(v.items)) {
+                v.items.forEach(it => {
+                    const key = it.n + (it.c ? ' - '+it.c : '');
+                    if (!productosVendidos[key]) productosVendidos[key] = { cant: 0, ingreso: 0 };
+                    productosVendidos[key].cant += (it.cant || 1);
+                    productosVendidos[key].ingreso += parseFloat(it.p || 0) * (it.cant || 1);
+                });
+            }
+        });
+
+        const pct = totalFact > 0 ? Math.round((totalGanancia/totalFact)*100) : 0;
+        document.getElementById('dk-facturado').innerText = '$' + Math.round(totalFact).toLocaleString('es-AR');
+        document.getElementById('dk-facturado-sub').innerText = ventas.length + ' operaciones';
+        document.getElementById('dk-ganancia').innerText = '$' + Math.round(totalGanancia).toLocaleString('es-AR');
+        document.getElementById('dk-ganancia-sub').innerText = pct + '% del total facturado';
+        document.getElementById('dk-ops').innerText = ventas.length;
+        const tc = {}; ventas.forEach(v => { tc[v.tipo||'Otro'] = (tc[v.tipo||'Otro']||0)+1; });
+        document.getElementById('dk-ops-sub').innerText = Object.entries(tc).map(([t,n])=>n+' '+t).join(' · ');
+
+        const medioTop = Object.entries(mediosPago).sort((a,b)=>b[1]-a[1])[0];
+        document.getElementById('dk-medio').innerText = medioTop ? medioTop[0] : '—';
+        document.getElementById('dk-medio-sub').innerText = medioTop ? '$'+Math.round(medioTop[1]).toLocaleString('es-AR') : '';
+
+        const conStock = db.filter(p => p.s > 0).length;
+        const sinStock = db.filter(p => p.s <= 0).length;
+        document.getElementById('dk-stock-pos').innerText = conStock;
+        document.getElementById('dk-stock-neg').innerText = sinStock + ' sin stock / faltantes';
+
+        // Deuda fábrica
+        let deudaT = 0, pagadoT = 0;
+        historialVentas.forEach(v => {
+            const nt = normTipo(v.tipo);
+            if ((nt.includes('pedido') || nt.includes('fabrica')) && !nt.includes('pago')) {
+                let costo = parseFloat(v.costoTotal);
+                if (isNaN(costo) || costo <= 0) costo = parseFloat(v.total||0) * 0.73;
+                deudaT += (isNaN(costo) ? 0 : costo);
+                if (v.pagadoFabrica === true) pagadoT += costo;
+            } else if (nt.includes('pago') && nt.includes('fabrica')) {
+                pagadoT += parseFloat(v.montoPagoFabrica||0);
+            }
+        });
+        const saldoFab = deudaT - pagadoT;
+        document.getElementById('dk-deuda').innerText = '$' + Math.round(Math.max(0,saldoFab)).toLocaleString('es-AR');
+
+        // Top productos
+        const topProds = Object.entries(productosVendidos).sort((a,b)=>b[1].cant-a[1].cant).slice(0,10);
+        const maxCant = topProds.length > 0 ? topProds[0][1].cant : 1;
+        if (topProds.length === 0) {
+            document.getElementById('dash-top-prod').innerHTML = '<p style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px 0;">Sin datos aún. Se registran desde la próxima venta.</p>';
+        } else {
+            document.getElementById('dash-top-prod').innerHTML = `<table class="dash-table"><thead><tr><th>#</th><th>Producto</th><th style="text-align:center">Cant.</th><th style="text-align:right">Ingreso</th></tr></thead><tbody>${topProds.map(([nombre,data],i)=>`<tr><td style="color:var(--text-muted)">${i+1}</td><td><div style="font-weight:700">${nombre}</div><div style="margin-top:3px"><span class="dash-bar" style="width:${Math.round((data.cant/maxCant)*80)}px"></span></div></td><td style="text-align:center;font-weight:800;color:var(--primary)">${data.cant}</td><td style="text-align:right;font-weight:700">$${Math.round(data.ingreso).toLocaleString('es-AR')}</td></tr>`).join('')}</tbody></table>`;
+        }
+
+        // Medios de pago
+        const mediosOrd = Object.entries(mediosPago).sort((a,b)=>b[1]-a[1]);
+        const maxM = mediosOrd.length > 0 ? mediosOrd[0][1] : 1;
+        document.getElementById('dash-medios').innerHTML = mediosOrd.length === 0
+            ? '<p style="color:var(--text-muted);font-size:12px;text-align:center;padding:20px 0;">Sin ventas en este período.</p>'
+            : `<table class="dash-table"><thead><tr><th>Medio</th><th style="text-align:right">Monto</th><th style="text-align:center">%</th></tr></thead><tbody>${mediosOrd.map(([mp,monto])=>`<tr><td><div style="font-weight:700">${mp}</div><div style="margin-top:3px"><span class="dash-bar" style="width:${Math.round((monto/maxM)*80)}px;background:#8b5cf6"></span></div></td><td style="text-align:right;font-weight:800">$${Math.round(monto).toLocaleString('es-AR')}</td><td style="text-align:center"><span class="dash-badge dash-badge-gray">${totalFact>0?Math.round((monto/totalFact)*100):0}%</span></td></tr>`).join('')}</tbody></table>`;
+
+        // Stock crítico
+        const faltantes = db.filter(p=>p.s<=0).sort((a,b)=>a.s-b.s).slice(0,20);
+        document.getElementById('dash-stock-crit').innerHTML = faltantes.length === 0
+            ? '<p style="color:var(--success);font-size:12px;text-align:center;padding:20px 0;">✅ No hay faltantes.</p>'
+            : `<table class="dash-table"><thead><tr><th>Producto</th><th style="text-align:center">Stock</th></tr></thead><tbody>${faltantes.map(p=>`<tr><td><div style="font-weight:700;font-size:12px">${p.n}</div><div style="font-size:11px;color:var(--text-muted)">${p.c||''}</div></td><td style="text-align:center"><span class="dash-badge ${p.s<0?'dash-badge-red':'dash-badge-gray'}">${p.s}</span></td></tr>`).join('')}</tbody></table>`;
+
+        // Cuenta corriente fábrica
+        const ultMov = historialVentas.filter(v=>{ const nt=normTipo(v.tipo); return nt.includes('pedido')||nt.includes('fabrica'); }).slice(-6).reverse();
+        document.getElementById('dash-cc-fabrica').innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 14px;border-radius:8px;background:${saldoFab>0?'#fee2e2':'#ecfdf5'};border:1px solid ${saldoFab>0?'#fca5a5':'#6ee7b7'}">
+                <span style="font-size:12px;font-weight:700;color:${saldoFab>0?'#991b1b':'#065f46'}">${saldoFab>0?'Deuda pendiente':'Al día ✅'}</span>
+                <span style="font-size:18px;font-weight:800;color:${saldoFab>0?'#b91c1c':'#059669'}">$${Math.round(Math.abs(saldoFab)).toLocaleString('es-AR')}</span>
+            </div>
+            ${ultMov.length===0?'<p style="color:var(--text-muted);font-size:12px;text-align:center;">Sin movimientos.</p>':`<table class="dash-table"><thead><tr><th>Fecha</th><th>Ref.</th><th style="text-align:right">Monto</th></tr></thead><tbody>${ultMov.map(v=>{ const nt=normTipo(v.tipo); const esPago=nt.includes('pago'); const monto=esPago?parseFloat(v.montoPagoFabrica||0):parseFloat(v.costoTotal||0); return `<tr><td style="font-size:11px">${new Date(v.fecha).toLocaleDateString('es-AR')}</td><td style="font-size:11px">${esPago?'💸 Pago':'📦 '+(v.cliente||'Pedido')}</td><td style="text-align:right;font-weight:700;color:${esPago?'var(--success)':'var(--danger)'}">${esPago?'-':'+'}$${Math.round(monto).toLocaleString('es-AR')}</td></tr>`; }).join('')}</tbody></table>`}`;
+    }
+
+
+    // ══════════ MODAL COMPROBANTE ══════════
+    let _modalTipo = '';
+
+    function abrirModalAccion(tipo) {
+        if(carritoPos.length === 0) return alert("❌ Añadí productos primero.");
+        _modalTipo = tipo;
+        const tituloMap = { factura: 'Factura C', ticket: 'Ticket X' };
+        document.getElementById('modal-titulo').innerText = tituloMap[tipo] + ' — ¿Cómo lo enviamos?';
+        document.getElementById('modal-sub').innerText = 'Descargá el PDF o envialo directo por Gmail.';
+        document.getElementById('modal-email').classList.remove('visible');
+        document.getElementById('modal-email').value = '';
+        document.getElementById('modal-btn-enviar').style.display = 'none';
+        document.getElementById('modal-accion').classList.add('open');
+    }
+
+    function cerrarModal() {
+        document.getElementById('modal-accion').classList.remove('open');
+        document.getElementById('modal-email').classList.remove('visible');
+        document.getElementById('modal-btn-enviar').style.display = 'none';
+    }
+
+    function mostrarEmailModal() {
+        document.getElementById('modal-email').classList.add('visible');
+        document.getElementById('modal-btn-enviar').style.display = 'block';
+        document.getElementById('modal-email').focus();
+    }
+
+    function confirmarAccion(accion) {
+        if (accion === 'imprimir') {
+            cerrarModal();
+            if (_modalTipo === 'factura') {
+                const c = document.getElementById('clie-pos').value || "Consumidor Final";
+                const p = document.getElementById('pago-pos').value;
+                procesarVentaPos(c, p, 'Factura C');
+                alert('✅ FACTURA C REGISTRADA\nTotal: $' + document.getElementById('res-total-pos').innerText);
+                limpiarVentaPos();
+            } else {
+                emitirTicketX();
+            }
+        } else if (accion === 'mail') {
+            const email = document.getElementById('modal-email').value.trim();
+            if (!email) return alert('❌ Ingresá el email del cliente.');
+            cerrarModal();
+            if (_modalTipo === 'factura') _enviarFacturaGmail(email);
+            else _enviarTicketGmail(email);
+        }
+    }
+
+    function _enviarFacturaGmail(emailDest) {
+        const c = document.getElementById('clie-pos').value || "Consumidor Final";
+        const p = document.getElementById('pago-pos').value;
+        const grupos = agruparCarritoPos();
+        const fecha = new Date().toLocaleDateString('es-AR');
+        const desc = parseFloat(document.getElementById('desc-pos').value) || 0;
+        const subtotal = carritoPos.reduce((s,i) => s + parseFloat(i.p||0), 0);
+        const descMonto = subtotal * (desc/100);
+        const total = subtotal - descMonto;
+        procesarVentaPos(c, p, 'Factura C');
+        const asunto = 'Factura C - Lecatex Express - ' + c + ' - ' + fecha;
+        let cuerpo = 'Estimado/a ' + c + ',\n\nDetalle de su comprobante:\n\n';
+        cuerpo += '─────────────────────────────\n';
+        cuerpo += 'FACTURA C — LECATEX EXPRESS\nVilla Ballester | Fecha: ' + fecha + '\nMedio de pago: ' + p + '\n';
+        cuerpo += '─────────────────────────────\n\n';
+        grupos.forEach(g => {
+            const sub = parseFloat(g.item.p) * g.cant;
+            cuerpo += '• ' + g.item.n + (g.item.c?' - '+g.item.c:'') + '\n';
+            cuerpo += '  Cant: ' + g.cant + '  |  P. Unit: $' + parseFloat(g.item.p).toLocaleString('es-AR') + '  |  Subtotal: $' + sub.toLocaleString('es-AR') + '\n\n';
+        });
+        if(desc > 0) cuerpo += 'Descuento (' + desc + '%): -$' + Math.round(descMonto).toLocaleString('es-AR') + '\n';
+        cuerpo += '─────────────────────────────\nTOTAL: $' + Math.round(total).toLocaleString('es-AR') + '\n─────────────────────────────\n\n';
+        cuerpo += 'Gracias por su compra.\n\nSaludos,\nLecatex Express\nVilla Ballester, Buenos Aires';
+        const url = 'https://mail.google.com/mail/?view=cm&to=' + encodeURIComponent(emailDest) + '&su=' + encodeURIComponent(asunto) + '&body=' + encodeURIComponent(cuerpo);
+        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        limpiarVentaPos();
+    }
+
+    function _enviarTicketGmail(emailDest) {
+        const c = document.getElementById('clie-pos').value || "Consumidor Final";
+        const p = document.getElementById('pago-pos').value;
+        const grupos = agruparCarritoPos();
+        const fecha = new Date().toLocaleDateString('es-AR');
+        const desc = parseFloat(document.getElementById('desc-pos').value) || 0;
+        const subtotal = carritoPos.reduce((s,i) => s + parseFloat(i.p||0), 0);
+        const descMonto = subtotal * (desc/100);
+        const total = subtotal - descMonto;
+        const nro = String(Math.floor(Math.random()*9000000)+1000000).padStart(8,'0');
+        procesarVentaPos(c, p, 'Ticket X');
+        const asunto = 'Tique C N° 00001-' + nro + ' - Lecatex Express - ' + fecha;
+        let cuerpo = 'Estimado/a ' + c + ',\n\nDetalle de su comprobante:\n\n';
+        cuerpo += '─────────────────────────────\n';
+        cuerpo += 'TIQUE C — LECATEX ZONA NORTE\nLECATEX EXPRESS VILLA BALLESTER\n';
+        cuerpo += 'CUIT: 20-31144628-3 | RESPONSABLE MONOTRIBUTO\n';
+        cuerpo += 'Comp. Nro: 00001-' + nro + ' | Fecha: ' + fecha + '\nMedio de pago: ' + p + '\n';
+        cuerpo += '─────────────────────────────\n\n';
+        grupos.forEach(g => {
+            const sub = parseFloat(g.item.p) * g.cant;
+            cuerpo += '• ' + g.item.n + (g.item.c?' - '+g.item.c:'') + '\n';
+            cuerpo += '  Cant: ' + g.cant + '  |  P. Unit: $' + parseFloat(g.item.p).toLocaleString('es-AR') + '  |  Subtotal: $' + sub.toLocaleString('es-AR') + '\n\n';
+        });
+        if(desc > 0) cuerpo += 'Descuento (' + desc + '%): -$' + Math.round(descMonto).toLocaleString('es-AR') + '\n';
+        cuerpo += '─────────────────────────────\nIMPORTE TOTAL: $' + Math.round(total).toLocaleString('es-AR') + '\n─────────────────────────────\n\n';
+        cuerpo += 'DOCUMENTO NO VÁLIDO COMO FACTURA — USO INTERNO\n\n';
+        cuerpo += 'Saludos,\nLecatex Express\nVilla Ballester, Buenos Aires';
+        const url = 'https://mail.google.com/mail/?view=cm&to=' + encodeURIComponent(emailDest) + '&su=' + encodeURIComponent(asunto) + '&body=' + encodeURIComponent(cuerpo);
+        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        limpiarVentaPos();
+    }
+
+
+// ══════════ REGENERAR PDF DESDE HISTORIAL ══════════
+    function regenerarPDF(v) {
+        const { jsPDF } = window.jspdf;
+        const tipo = String(v.tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        const cliente = v.cliente || 'Cliente';
+        const total = parseFloat(v.total || 0);
+        const fecha = new Date(v.fecha).toLocaleDateString('es-AR');
+        const pago = v.pago || '-';
+        const items = v.items || [];
+
+        if (tipo === 'ticket x') {
+            // ── TIQUE C ──
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const nro = String(Math.floor(Math.random()*9000000)+1000000).padStart(8,'0');
+            doc.setLineWidth(0.5); doc.rect(10, 10, 190, 267);
+            doc.setFont("helvetica","bold"); doc.setFontSize(22); doc.text("TIQUE C", 20, 24);
+            doc.setLineWidth(0.3); doc.line(10, 28, 200, 28);
+            doc.setFont("helvetica","normal"); doc.setFontSize(10);
+            doc.text("Comprobante Nº:", 20, 37); doc.setFont("helvetica","bold"); doc.text("00001-"+nro, 65, 37);
+            doc.setFont("helvetica","normal"); doc.text("Fecha de emisión:", 20, 44); doc.setFont("helvetica","bold"); doc.text(fecha, 65, 44);
+            doc.setLineWidth(0.3); doc.line(10, 48, 200, 48);
+            doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.text("Datos del emisor", 20, 57);
+            doc.setFont("helvetica","normal"); doc.setFontSize(9);
+            doc.text("LECATEX ZONA NORTE", 80, 54); doc.text("LECATEX EXPRESS VILLA BALLESTER", 80, 60);
+            doc.text("CUIT  20-31144628-3", 80, 66); doc.text("Ingresos Brutos  20311446283", 80, 72);
+            doc.text("RESPONSABLE MONOTRIBUTO", 80, 78);
+            doc.setLineWidth(0.3); doc.line(10, 83, 200, 83);
+            doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.text("Datos del receptor", 20, 92);
+            doc.setFont("helvetica","normal"); doc.setFontSize(9);
+            doc.text(cliente.toUpperCase(), 80, 89); doc.text("A CONSUMIDOR FINAL", 80, 95);
+            doc.setLineWidth(0.3); doc.line(10, 100, 200, 100);
+
+            let tableBody = items.length > 0
+                ? items.map(it => [it.n+(it.c?' - '+it.c:''), it.cant||1, '$ '+parseFloat(it.p).toLocaleString('es-AR'), '$ '+(parseFloat(it.p)*(it.cant||1)).toLocaleString('es-AR')])
+                : [['Venta registrada', 1, '$ '+total.toLocaleString('es-AR'), '$ '+total.toLocaleString('es-AR')]];
+
+            doc.autoTable({ startY: 104, head: [['Descripción','Cant.','P. Unit.','Subtotal']], body: tableBody, theme: 'grid', headStyles: { fillColor: [240,240,240], textColor: 0, fontStyle: 'bold', fontSize: 9 }, bodyStyles: { fontSize: 9, textColor: 0 }, columnStyles: { 1:{halign:'center',cellWidth:16}, 2:{halign:'right',cellWidth:38}, 3:{halign:'right',cellWidth:38,fontStyle:'bold'} }, margin: { left:10, right:10 }, tableLineColor:[0,0,0], tableLineWidth:0.2 });
+
+            let yF = doc.lastAutoTable.finalY;
+            doc.setLineWidth(0.3); doc.line(10, yF+5, 200, yF+5);
+            doc.setFont("helvetica","bold"); doc.setFontSize(13);
+            doc.text("Importe total", 20, yF+14);
+            doc.setTextColor(30,100,200); doc.text("$ "+total.toLocaleString('es-AR'), 195, yF+14, {align:"right"});
+            doc.setTextColor(0,0,0); doc.setLineWidth(0.3); doc.line(10, yF+18, 200, yF+18);
+            doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(150,0,0);
+            doc.text("DOCUMENTO NO VÁLIDO COMO FACTURA — SOLO USO INTERNO", 105, yF+25, {align:"center"});
+            doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(100,100,100);
+            doc.text("La autorización de este comprobante sólo considera sus aspectos formales.", 105, yF+31, {align:"center"});
+            doc.save("TiqueC_"+cliente.replace(/\s+/g,'_')+"_"+nro+".pdf");
+
+        } else if (tipo === 'factura c') {
+            // ── FACTURA C — resumen simple ──
+            const doc = new jsPDF();
+            doc.setFillColor(15,23,42); doc.rect(0,0,210,35,'F');
+            doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(255,255,255);
+            doc.text("LECATEX EXPRESS — FACTURA C", 105, 15, {align:"center"});
+            doc.setFontSize(10); doc.setFont("helvetica","normal");
+            doc.text("Villa Ballester | "+fecha+" | Pago: "+pago, 105, 23, {align:"center"});
+            doc.setTextColor(0,0,0);
+            doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.text("Cliente:", 15, 46); doc.setFont("helvetica","normal"); doc.text(cliente, 35, 46);
+            doc.line(15, 50, 195, 50);
+
+            let tableBody = items.length > 0
+                ? items.map(it => [it.n+(it.c?' - '+it.c:''), it.cant||1, '$ '+parseFloat(it.p).toLocaleString('es-AR'), '$ '+(parseFloat(it.p)*(it.cant||1)).toLocaleString('es-AR')])
+                : [['Venta registrada', 1, '$ '+total.toLocaleString('es-AR'), '$ '+total.toLocaleString('es-AR')]];
+
+            doc.autoTable({ startY: 54, head: [['Descripción','Cant.','P. Unit.','Subtotal']], body: tableBody, theme: 'grid', headStyles: { fillColor: [15,23,42], textColor: 255, fontSize: 9 }, bodyStyles: { fontSize: 9 }, columnStyles: { 1:{halign:'center',cellWidth:16}, 2:{halign:'right',cellWidth:38}, 3:{halign:'right',cellWidth:40,fontStyle:'bold'} } });
+
+            const yF = doc.lastAutoTable.finalY;
+            doc.setFont("helvetica","bold"); doc.setFontSize(13);
+            doc.text("TOTAL:", 140, yF+12); doc.text("$ "+total.toLocaleString('es-AR'), 195, yF+12, {align:"right"});
+            doc.save("FacturaC_"+cliente.replace(/\s+/g,'_')+"_"+fecha.replace(/\//g,'-')+".pdf");
+
+        } else if (tipo.includes('pedido') || tipo.includes('fabrica')) {
+            // ── PEDIDO A FÁBRICA ──
+            const doc = new jsPDF();
+            doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.text("PEDIDO A FÁBRICA — LECATEX", 15, 20);
+            doc.setFont("helvetica","normal"); doc.setFontSize(10);
+            doc.text("Fecha: "+fecha+" | Cliente ref: "+cliente, 15, 28);
+            doc.line(15, 32, 195, 32);
+
+            let tableBody = items.length > 0
+                ? items.map(it => [it.n+(it.c?' - '+it.c:''), it.cant||1, '$ '+parseFloat(it.p).toLocaleString('es-AR'), '$ '+(parseFloat(it.p)*(it.cant||1)).toLocaleString('es-AR')])
+                : [['Pedido registrado', 1, '$ '+total.toLocaleString('es-AR'), '$ '+total.toLocaleString('es-AR')]];
+
+            doc.autoTable({ startY: 36, head: [['Descripción','Cant.','P. Venta','Subtotal']], body: tableBody, theme: 'grid', headStyles: { fillColor: [139,92,246], textColor: 255, fontSize: 9 }, bodyStyles: { fontSize: 9 }, columnStyles: { 1:{halign:'center',cellWidth:16}, 2:{halign:'right',cellWidth:38}, 3:{halign:'right',cellWidth:40,fontStyle:'bold'} } });
+
+            const yF = doc.lastAutoTable.finalY;
+            doc.setFont("helvetica","bold"); doc.setFontSize(12);
+            doc.text("TOTAL PEDIDO:", 130, yF+12); doc.text("$ "+total.toLocaleString('es-AR'), 195, yF+12, {align:"right"});
+            doc.save("Pedido_"+cliente.replace(/\s+/g,'_')+"_"+fecha.replace(/\//g,'-')+".pdf");
+
+        } else {
+            // ── PRESUPUESTO u otro ──
+            const doc = new jsPDF();
+            doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(14,165,233);
+            doc.text("PRESUPUESTO — LECATEX EXPRESS", 15, 20); doc.setTextColor(0,0,0);
+            doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.text("Villa Ballester | Fecha: "+fecha, 15, 28);
+            doc.line(15, 32, 195, 32);
+            doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.text("Cliente:", 15, 40); doc.setFont("helvetica","normal"); doc.text(cliente, 35, 40);
+
+            let tableBody = items.length > 0
+                ? items.map(it => [it.n+(it.c?' - '+it.c:''), it.cant||1, '$ '+parseFloat(it.p).toLocaleString('es-AR'), '$ '+(parseFloat(it.p)*(it.cant||1)).toLocaleString('es-AR')])
+                : [['Presupuesto registrado', 1, '$ '+total.toLocaleString('es-AR'), '$ '+total.toLocaleString('es-AR')]];
+
+            doc.autoTable({ startY: 44, head: [['Descripción','Cant.','P. Unit.','Subtotal']], body: tableBody, theme: 'grid', headStyles: { fillColor: [14,165,233], textColor: 255, fontSize: 9 }, bodyStyles: { fontSize: 9 }, columnStyles: { 1:{halign:'center',cellWidth:16}, 2:{halign:'right',cellWidth:38}, 3:{halign:'right',cellWidth:40,fontStyle:'bold'} } });
+
+            const yF = doc.lastAutoTable.finalY;
+            doc.setFont("helvetica","bold"); doc.setFontSize(13);
+            doc.text("TOTAL:", 140, yF+12); doc.text("$ "+total.toLocaleString('es-AR'), 195, yF+12, {align:"right"});
+            doc.save("Presupuesto_"+cliente.replace(/\s+/g,'_')+"_"+fecha.replace(/\//g,'-')+".pdf");
+        }
+    }
+
+
+    // ══ JS RESCATADO (movido de tags src incorrectos) ══
+// ══════════════════════════════════════════════
+    //  CALCULADORA DE MATERIALES — precios desde Firebase
+    // ══════════════════════════════════════════════
+
+    // Catálogo con rendimientos fijos (los precios se sobreescriben con Firebase)
+    const calcCatalogo = {
+        "llana_fina": {
+            nombre: "Llana Fina",
+            requiereBase: true,
+            presentaciones: [
+                { nombre: "Balde 30 kg (Rinde 16 m²)", rendimiento: 16, buscarEn: "Revestimiento", patron: "30|llana fina" },
+                { nombre: "Balde 15 kg (Rinde 8 m²)",  rendimiento: 8,  buscarEn: "Revestimiento", patron: "15 kg" }
+            ]
+        },
+        "llana_media": {
+            nombre: "Llana Media",
+            requiereBase: true,
+            presentaciones: [
+                { nombre: "Balde 30 kg (Rinde 13 m²)", rendimiento: 13, buscarEn: "Revestimiento", patron: "30|llana media" },
+                { nombre: "Balde 15 kg (Rinde 6 m²)",  rendimiento: 6,  buscarEn: "Revestimiento", patron: "15 kg" }
+            ]
+        },
+        "rodillo": {
+            nombre: "Revestimiento Rodillo",
+            requiereBase: true,
+            presentaciones: [
+                { nombre: "Balde 30 kg (Rinde 15 m²)", rendimiento: 15, buscarEn: "Revestimiento", patron: "30" }
+            ]
+        },
+        "stone": {
+            nombre: "Lecatex Stone",
+            requiereBase: true,
+            presentaciones: [
+                { nombre: "Kit 20 kg (Rinde 2 m²)", rendimiento: 2, buscarEn: "Lecatex Stone", patron: "20 kg" }
+            ]
+        },
+        "membrana": {
+            nombre: "Membrana de Caucho",
+            requiereBase: false,
+            presentaciones: [
+                { nombre: "Tacho 22 kg (Rinde 10 m²)",   rendimiento: 10,  buscarEn: "Membrana", patron: "22" },
+                { nombre: "Tacho 12.5 kg (Rinde 5.5 m²)",rendimiento: 5.5, buscarEn: "Membrana", patron: "12" },
+                { nombre: "Tacho 6 kg (Rinde 2.5 m²)",   rendimiento: 2.5, buscarEn: "Membrana", patron: "6" },
+                { nombre: "Tacho 5 kg (Rinde 2.2 m²)",   rendimiento: 2.2, buscarEn: "Membrana", patron: "5" }
+            ]
+        },
+        "latex": {
+            nombre: "Látex Profesional",
+            requiereBase: false,
+            presentaciones: [
+                { nombre: "Tacho 20 Litros (Rinde 60 m²)", rendimiento: 60, buscarEn: "Latex", patron: "20" },
+                { nombre: "Tacho 10 Litros (Rinde 30 m²)", rendimiento: 30, buscarEn: "Latex", patron: "10" },
+                { nombre: "Tacho 4 Litros (Rinde 12 m²)",  rendimiento: 12, buscarEn: "Latex", patron: "4" }
+            ]
+        },
+        "manga": {
+            nombre: "Manga de Caucho",
+            requiereBase: false,
+            presentaciones: [
+                { nombre: "Rollo (Rinde 11 ml)", rendimiento: 11, buscarEn: "Manga", patron: "" }
+            ]
+        }
+    };
+
+    let calcProdActual = null;
+    let calcPresActual = null;
+    let calcDatos = null;
+
+    // Busca en db[] de Firebase el precio de un producto por nombre de categoría y patrón
+    function calcBuscarPrecioFirebase(buscarEn, patron, colorNombre) {
+        const buscarEnL = buscarEn.toLowerCase();
+        const patronL = (patron || '').toLowerCase();
+        const colorL = (colorNombre || '').toLowerCase();
+
+        // Buscar por categoría + color + presentación
+        let prod = db.find(p => {
+            const nL = (p.n || '').toLowerCase();
+            const cL = (p.c || '').toLowerCase();
+            const matchCategoria = nL.includes(buscarEnL) || buscarEnL.includes(nL.split(' ')[0].toLowerCase());
+            const matchColor = !colorL || cL.includes(colorL.split(' ')[0].toLowerCase());
+            const matchPatron = !patronL || cL.includes(patronL) || nL.includes(patronL);
+            return matchCategoria && matchColor;
+        });
+
+        // Si no hay match con color, buscar solo por categoría y patrón
+        if (!prod) {
+            prod = db.find(p => {
+                const nL = (p.n || '').toLowerCase();
+                const cL = (p.c || '').toLowerCase();
+                return nL.includes(buscarEnL) || buscarEnL.includes(nL.split(' ')[0].toLowerCase());
+            });
+        }
+
+        return prod ? parseFloat(prod.p) : null;
+    }
+
+    // Obtiene todos los colores disponibles para una presentación buscando en Firebase
+    function calcObtenerColores(buscarEn) {
+        const buscarEnL = buscarEn.toLowerCase();
+        const coloresDb = db.filter(p => {
+            const nL = (p.n || '').toLowerCase();
+            return nL.includes(buscarEnL) || buscarEnL.includes(nL.split(' ')[0].toLowerCase());
+        });
+
+        if (coloresDb.length === 0) return [{ nombre: 'Color Único', precio: 0 }];
+
+        // Agrupar colores únicos
+        const vistos = new Set();
+        const colores = [];
+        coloresDb.forEach(p => {
+            const color = p.c || 'Único';
+            if (!vistos.has(color)) {
+                vistos.add(color);
+                colores.push({ nombre: color, precio: parseFloat(p.p) });
+            }
+        });
+        return colores.length > 0 ? colores : [{ nombre: 'Color Único', precio: 0 }];
+    }
+
+    function inicializarCalculadora() {
+        const sel = document.getElementById('calc-producto');
+        if (!sel) return;
+        sel.innerHTML = '';
+        for (const key in calcCatalogo) {
+            sel.innerHTML += `<option value="${key}">${calcCatalogo[key].nombre}</option>`;
+        }
+        calcCargarPresentaciones();
+        // Autocompletar bases con precios Firebase
+        if (db.length > 0) {
+            calcAutocompletarBase();
+        } else {
+            // db aún cargando — reintentar en 1.5s
+            setTimeout(() => { if(db.length > 0) calcAutocompletarBase(); }, 1500);
+        }
+    }
+
+    function calcCargarPresentaciones() {
+        const key = document.getElementById('calc-producto').value;
+        calcProdActual = calcCatalogo[key];
+        document.getElementById('calc-panel-base').style.display = calcProdActual.requiereBase ? 'block' : 'none';
+
+        const sel = document.getElementById('calc-presentacion');
+        sel.innerHTML = '';
+        calcProdActual.presentaciones.forEach((p, i) => {
+            sel.innerHTML += `<option value="${i}">${p.nombre}</option>`;
+        });
+        calcCargarColores();
+        calcAutocompletarBase();
+    }
+
+    function calcCargarColores() {
+        const i = parseInt(document.getElementById('calc-presentacion').value);
+        calcPresActual = calcProdActual.presentaciones[i];
+
+        const colores = calcObtenerColores(calcPresActual.buscarEn);
+        const sel = document.getElementById('calc-color');
+        sel.innerHTML = '';
+        if (colores.length === 0 || (colores.length === 1 && colores[0].nombre === 'Color Único' && colores[0].precio === 0)) {
+            // Firebase aún cargando — mostrar placeholder y reintentar
+            sel.innerHTML = '<option>Cargando colores...</option>';
+            setTimeout(() => calcCargarColores(), 1000);
+            return;
+        }
+        colores.forEach((c, idx) => {
+            sel.innerHTML += `<option value="${idx}">${c.nombre} — $${Math.round(c.precio).toLocaleString('es-AR')}</option>`;
+        });
+        calcActualizarPrecio();
+    }
+
+    function calcActualizarPrecio() {
+        const colores = calcObtenerColores(calcPresActual.buscarEn);
+        const idx = parseInt(document.getElementById('calc-color').value);
+        const colorSel = colores[idx] || colores[0];
+
+        let precio = colorSel.precio;
+        let origen = 'Firebase 🔥';
+
+        if (!precio || precio === 0) {
+            precio = 0;
+            origen = 'Manual';
+        }
+
+        document.getElementById('calc-precio').value = precio;
+        const badge = document.getElementById('calc-precio-origen');
+        badge.innerText = origen;
+        badge.className = origen.includes('Firebase') ? 'calc-precio-badge' : 'calc-precio-badge naranja';
+        calcularCalc();
+    }
+
+    function calcAutocompletarBase() {
+        if (!calcProdActual || !calcProdActual.requiereBase) return;
+
+        // Buscar precios de Base en Firebase
+        const buscarBase = (litros) => {
+            const litrosStr = litros.toString();
+            const prod = db.find(p => {
+                const nL = (p.n || '').toLowerCase();
+                const cL = (p.c || '').toLowerCase();
+                return (nL.includes('base') || nL.includes('fondo')) && (cL.includes(litrosStr) || nL.includes(litrosStr + ' l'));
+            });
+            return prod ? parseFloat(prod.p) : 0;
+        };
+
+        const p20 = buscarBase(20);
+        const p10 = buscarBase(10);
+        const p4 = buscarBase(4);
+
+        document.getElementById('calc-precio-base20').value = p20 || '';
+        document.getElementById('calc-precio-base10').value = p10 || '';
+        document.getElementById('calc-precio-base4').value = p4 || '';
+
+        const fmt = (p) => p > 0 ? '$'+Math.round(p).toLocaleString('es-AR') : 'Sin precio';
+        document.getElementById('calc-badge-b20').innerText = fmt(p20);
+        document.getElementById('calc-badge-b10').innerText = fmt(p10);
+        document.getElementById('calc-badge-b4').innerText = fmt(p4);
+
+        calcularCalc();
+    }
+
+    function calcFmtMoneda(v) {
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(v);
+    }
+
+    function calcularCalc() {
+        const metrosInput = (document.getElementById('calc-metros').value || '').replace(',', '.');
+        const metros = parseFloat(metrosInput);
+        const costoDiv = document.getElementById('calc-total');
+        const desgloseDiv = document.getElementById('calc-desglose');
+
+        if (isNaN(metros) || metros <= 0) {
+            desgloseDiv.innerHTML = 'Ingresá los metros para ver el desglose.';
+            costoDiv.innerText = '$ 0';
+            calcDatos = null;
+            return;
+        }
+
+        const colores = calcObtenerColores(calcPresActual.buscarEn);
+        const colorIdx = parseInt(document.getElementById('calc-color').value);
+        const colorSel = colores[colorIdx] || colores[0];
+        const rendimiento = calcPresActual.rendimiento;
+        const precio = parseFloat(document.getElementById('calc-precio').value) || 0;
+        const nombreCompleto = calcProdActual.nombre + ' - ' + calcPresActual.nombre.split(' (')[0] + ' (' + colorSel.nombre + ')';
+
+        const cantPrincipal = Math.ceil(metros / rendimiento);
+        const subtotalPrincipal = cantPrincipal * precio;
+        let costoTotal = subtotalPrincipal;
+
+        let desglose = `<strong>${cantPrincipal}x</strong> ${nombreCompleto} — ${calcFmtMoneda(subtotalPrincipal)}`;
+
+        calcDatos = {
+            metros, nombreCompleto, colorElegido: colorSel.nombre,
+            cantPrincipal, precio, subtotalPrincipal,
+            requiereBase: calcProdActual.requiereBase,
+            base20: { cant: 0, precio: 0, subtotal: 0 },
+            base10: { cant: 0, precio: 0, subtotal: 0 },
+            base4:  { cant: 0, precio: 0, subtotal: 0 },
+            total: 0
+        };
+
+        if (calcProdActual.requiereBase) {
+            let b20 = Math.floor(metros / 80);
+            const resto = metros % 80;
+            let b10 = 0, b4 = 0;
+            if (resto >= 61) b20++;
+            else if (resto >= 26) b10++;
+            else if (resto > 0) b4++;
+
+            const p20 = parseFloat(document.getElementById('calc-precio-base20').value) || 0;
+            const p10 = parseFloat(document.getElementById('calc-precio-base10').value) || 0;
+            const p4  = parseFloat(document.getElementById('calc-precio-base4').value)  || 0;
+
+            calcDatos.base20 = { cant: b20, precio: p20, subtotal: b20 * p20 };
+            calcDatos.base10 = { cant: b10, precio: p10, subtotal: b10 * p10 };
+            calcDatos.base4  = { cant: b4,  precio: p4,  subtotal: b4  * p4  };
+            costoTotal += (b20*p20) + (b10*p10) + (b4*p4);
+
+            desglose += `<div style="margin-top:8px; border-top:1px solid #334155; padding-top:8px;"><strong>Fondo Base:</strong><br>`;
+            if (b20 > 0) desglose += `• ${b20}x Base 20 Lts (${colorSel.nombre}) — ${calcFmtMoneda(b20*p20)}<br>`;
+            if (b10 > 0) desglose += `• ${b10}x Base 10 Lts (${colorSel.nombre}) — ${calcFmtMoneda(b10*p10)}<br>`;
+            if (b4  > 0) desglose += `• ${b4}x Base 4 Lts (${colorSel.nombre}) — ${calcFmtMoneda(b4*p4)}<br>`;
+            desglose += `</div>`;
+        }
+
+        calcDatos.total = costoTotal;
+        desgloseDiv.innerHTML = desglose;
+        costoDiv.innerText = calcFmtMoneda(costoTotal);
+    }
+
+    function calcGenerarPDF() {
+        if (!calcDatos) return alert('Ingresá los metros para calcular primero.');
+        const cliente = document.getElementById('calc-cliente').value || 'Consumidor Final';
+        const fecha = new Date().toLocaleDateString('es-AR');
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.setFont("helvetica","bold"); doc.setFontSize(22); doc.text("Presupuesto Lecatex", 14, 22);
+        doc.setFontSize(12); doc.setFont("helvetica","normal");
+        doc.text("Cliente / Obra: " + cliente, 14, 32);
+        doc.text("Fecha: " + fecha, 160, 22);
+
+        const body = [];
+        let n = 1;
+        body.push([n++, "Metros a cubrir (m² / ml)", calcDatos.metros, "-", "-"]);
+        body.push([n++, calcDatos.nombreCompleto, calcDatos.cantPrincipal, calcFmtMoneda(calcDatos.precio), calcFmtMoneda(calcDatos.subtotalPrincipal)]);
+
+        if (calcDatos.requiereBase) {
+            const cb = "(Color: " + calcDatos.colorElegido + ")";
+            if (calcDatos.base20.cant > 0) body.push([n++, "Fondo Base 20 Lts "+cb, calcDatos.base20.cant, calcFmtMoneda(calcDatos.base20.precio), calcFmtMoneda(calcDatos.base20.subtotal)]);
+            if (calcDatos.base10.cant > 0) body.push([n++, "Fondo Base 10 Lts "+cb, calcDatos.base10.cant, calcFmtMoneda(calcDatos.base10.precio), calcFmtMoneda(calcDatos.base10.subtotal)]);
+            if (calcDatos.base4.cant  > 0) body.push([n++, "Fondo Base 4 Lts "+cb,  calcDatos.base4.cant,  calcFmtMoneda(calcDatos.base4.precio),  calcFmtMoneda(calcDatos.base4.subtotal)]);
+        }
+
+        doc.autoTable({
+            startY: 42, head: [['Ítem','Detalle','Cantidad','Precio Unit.','Subtotal']], body: body,
+            theme: 'grid', headStyles: { fillColor: [15,23,42], textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 10, cellPadding: 4 },
+            columnStyles: { 0:{halign:'center'}, 2:{halign:'center'}, 3:{halign:'right'}, 4:{halign:'right'} }
+        });
+
+        const yF = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(16); doc.setFont("helvetica","bold");
+        doc.text("Total General: " + calcFmtMoneda(calcDatos.total), 14, yF + 5);
+        doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(100);
+        doc.text("Presupuesto válido por 15 días desde la fecha de emisión.", 14, yF + 14);
+        doc.text("Lecatex Express — Villa Ballester, Buenos Aires", 14, yF + 19);
+
+        doc.save("Presupuesto_Calc_" + cliente.replace(/[^a-z0-9]/gi,'_').toLowerCase() + ".pdf");
+    }
+
+
+
+    // ══════════════════════════════════════════════
+    //  CLIENTES — Firebase colección "clientes"
+    // ══════════════════════════════════════════════
+    let clientesDB = [];
+
+    // Suscripción Firebase en tiempo real
+    dbFirestore.collection('clientes').orderBy('apellido', 'asc').onSnapshot(snapshot => {
+        clientesDB = [];
+        snapshot.forEach(doc => { let d = doc.data(); d.id_db = doc.id; clientesDB.push(d); });
+        if (document.getElementById('vista-clientes') && document.getElementById('vista-clientes').style.display !== 'none') mostrarClientes();
+    }, err => { clientesDB = []; });
+
+    function mostrarClientes() {
+        const busEl = document.getElementById('bus-clientes');
+        const val = busEl ? busEl.value.toLowerCase() : '';
+        const tbody = document.getElementById('cli-tabla-body');
+        if (!tbody) return;
+
+        const filtrados = clientesDB.filter(c => {
+            const txt = ((c.nombre||'')+' '+(c.apellido||'')+' '+(c.telefono||'')+' '+(c.email||'')).toLowerCase();
+            return txt.includes(val);
+        });
+
+        const el = id => document.getElementById(id);
+        if (el('cli-total-count')) el('cli-total-count').innerText = clientesDB.length;
+        if (el('cli-email-count')) el('cli-email-count').innerText = clientesDB.filter(c=>c.email).length;
+        const conCompras = new Set(historialVentas.filter(v=>v.cliente && v.cliente!=='Consumidor Final').map(v=>v.cliente.toLowerCase()));
+        if (el('cli-compras-count')) el('cli-compras-count').innerText = clientesDB.filter(c=>conCompras.has(((c.nombre||'')+' '+(c.apellido||'')).trim().toLowerCase())).length;
+
+        if (filtrados.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">${val ? 'Sin resultados para "'+val+'"' : 'No hay clientes aún. Usá ➕ Nuevo Cliente.'}</td></tr>`;
+            return;
+        }
+
+        const tipoColor = { mayorista:'#7c3aed', revendedor:'#0369a1', empresa:'#065f46', minorista:'#334155' };
+        tbody.innerHTML = filtrados.map(c => {
+            const nombre = ((c.nombre||'')+' '+(c.apellido||'')).trim();
+            const color = tipoColor[c.tipo||'minorista'] || '#334155';
+            return `<tr>
+                <td><strong>${nombre}</strong>${c.notas?`<br><span style="font-size:11px;color:#f59e0b;">📝 ${c.notas}</span>`:''}</td>
+                <td>${c.telefono||'—'}</td>
+                <td style="font-size:12px;">${c.email||'—'}</td>
+                <td style="font-size:12px;">${c.direccion||'—'}</td>
+                <td style="text-align:center;">${c.descuento>0?`<span style="background:#dbeafe;color:#1e40af;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;">${c.descuento}%</span>`:'—'}</td>
+                <td style="text-align:center;"><span style="background:${color};color:white;font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;">${(c.tipo||'minorista').toUpperCase()}</span></td>
+                <td style="text-align:center;">
+                    <div style="display:flex;gap:6px;justify-content:center;">
+                        <button onclick="abrirFormClientePOS('${c.id_db}')" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;">✏️ Editar</button>
+                        <button onclick="verHistorialCliente('${c.id_db}')" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;color:#1e40af;">📋</button>
+                        <button onclick="eliminarCliente('${c.id_db}','${nombre.replace(/'/g,"\'")}')" style="background:#fee2e2;border:1px solid #fecaca;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;color:#dc2626;">🗑️</button>
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function verHistorialCliente(id_db) {
+        const c = clientesDB.find(x => x.id_db === id_db);
+        if (!c) return;
+        const nombreCompleto = ((c.nombre||'')+' '+(c.apellido||'')).trim();
+        const compras = historialVentas.filter(v =>
+            v.cliente && v.cliente.toLowerCase().includes((c.nombre||'').toLowerCase()) &&
+            (!c.apellido || v.cliente.toLowerCase().includes(c.apellido.toLowerCase())) &&
+            !String(v.tipo||'').toLowerCase().includes('pago')
+        ).sort((a,b) => new Date(b.fecha)-new Date(a.fecha));
+        const total = compras.reduce((s,v)=>s+parseFloat(v.total||0),0);
+
+        document.getElementById('cli-hist-titulo').innerText = '📋 ' + nombreCompleto;
+        document.getElementById('cli-hist-resumen').innerHTML = `
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                <div style="background:#dbeafe;border-radius:8px;padding:10px 16px;text-align:center;flex:1;min-width:120px;">
+                    <div style="font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;">Compras</div>
+                    <div style="font-size:22px;font-weight:800;color:#1d4ed8;">${compras.length}</div>
+                </div>
+                <div style="background:#d1fae5;border-radius:8px;padding:10px 16px;text-align:center;flex:1;min-width:120px;">
+                    <div style="font-size:11px;font-weight:700;color:#065f46;text-transform:uppercase;">Total</div>
+                    <div style="font-size:22px;font-weight:800;color:#059669;">$${Math.round(total).toLocaleString('es-AR')}</div>
+                </div>
+            </div>`;
+        document.getElementById('cli-hist-tabla').innerHTML = compras.length === 0
+            ? '<p style="text-align:center;color:#64748b;padding:20px 0;">Sin compras registradas.</p>'
+            : `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead><tr style="background:#f8fafc;">
+                    <th style="padding:8px;text-align:left;border-bottom:1px solid #e2e8f0;font-size:11px;">Fecha</th>
+                    <th style="padding:8px;text-align:left;border-bottom:1px solid #e2e8f0;font-size:11px;">Tipo</th>
+                    <th style="padding:8px;text-align:right;border-bottom:1px solid #e2e8f0;font-size:11px;">Total</th>
+                </tr></thead>
+                <tbody>${compras.map(v=>`<tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:8px;font-size:12px;">${new Date(v.fecha).toLocaleDateString('es-AR')}</td>
+                    <td style="padding:8px;"><span style="background:#334155;color:white;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:800;">${v.tipo}</span></td>
+                    <td style="padding:8px;text-align:right;font-weight:700;">$${parseFloat(v.total||0).toLocaleString('es-AR')}</td>
+                </tr>`).join('')}</tbody>
+               </table>`;
+        document.getElementById('modal-historial-cli').classList.add('open');
+    }
+
+    function cerrarModalHistorial() { document.getElementById('modal-historial-cli').classList.remove('open'); }
+
+    function eliminarCliente(id_db, nombre) {
+        if (!confirm('¿Eliminar a ' + nombre + '?\nEsta acción no se puede deshacer.')) return;
+        dbFirestore.collection('clientes').doc(id_db).delete()
+            .then(() => { alert('✅ Cliente eliminado.'); mostrarClientes(); })
+            .catch(e => alert('❌ Error: ' + e.message));
+    }
+
+    function exportarClientesPDF() {
+        if (clientesDB.length === 0) return alert('No hay clientes para exportar.');
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const fecha = new Date().toLocaleDateString('es-AR');
+        doc.setFillColor(15,23,42); doc.rect(0,0,210,32,'F');
+        doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(255,255,255);
+        doc.text("BASE DE CLIENTES — LECATEX EXPRESS", 105, 14, {align:"center"});
+        doc.setFontSize(9); doc.setFont("helvetica","normal");
+        doc.text(fecha + " | " + clientesDB.length + " clientes", 105, 22, {align:"center"});
+        doc.setTextColor(0,0,0);
+        doc.autoTable({
+            startY: 38,
+            head: [['Nombre','Teléfono','Email','Dirección','Desc.%','Tipo']],
+            body: clientesDB.map(c => [
+                ((c.nombre||'')+' '+(c.apellido||'')).trim(),
+                c.telefono||'-', c.email||'-', c.direccion||'-',
+                c.descuento>0?c.descuento+'%':'-', c.tipo||'minorista'
+            ]),
+            theme: 'grid',
+            headStyles: {fillColor:[15,23,42],textColor:255,fontSize:8},
+            bodyStyles: {fontSize:8},
+            columnStyles: {0:{fontStyle:'bold'}}
+        });
+        doc.save("Clientes_Lecatex_"+fecha.replace(/\//g,'-')+".pdf");
+    }
+
+    function buscarClientesPOS() {
+        const val = (document.getElementById('clie-pos').value || '').toLowerCase().trim();
+        const sug = document.getElementById('cli-sugerencias');
+        if (!sug) return;
+        if (!val || val.length < 2 || clientesDB.length === 0) { sug.style.display = 'none'; return; }
+        const matches = clientesDB.filter(c => {
+            const full = ((c.nombre||'')+' '+(c.apellido||'')+' '+(c.telefono||'')).toLowerCase();
+            return full.includes(val);
+        }).slice(0, 6);
+        if (matches.length === 0) { sug.style.display = 'none'; return; }
+        sug.innerHTML = matches.map(c => {
+            const nombre = ((c.nombre||'')+' '+(c.apellido||'')).trim();
+            return `<div onclick="seleccionarClienteEnPOS('${nombre.replace(/'/g,"\\'")}','${(c.email||'').replace(/'/g,"\\'")}','${(c.telefono||'').replace(/'/g,"\\'")}','${(c.direccion||'').replace(/'/g,"\\'")}',${c.descuento||0},'${(c.iva||'Consumidor Final').replace(/'/g,"\\'")}')"
+                style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f1f5f9;"
+                onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='white'">
+                <div style="font-weight:700;font-size:13px;">${nombre}</div>
+                <div style="font-size:11px;color:#64748b;">${c.telefono||''} ${c.email?'· '+c.email:''}</div>
+            </div>`;
+        }).join('');
+        sug.style.display = 'block';
+    }
+
+    function seleccionarClienteEnPOS(nombre, email, tel, dir, descuento, iva) {
+        document.getElementById('clie-pos').value = nombre;
+        document.getElementById('cli-sugerencias').style.display = 'none';
+        if (descuento > 0) { document.getElementById('desc-pos').value = descuento; actualizarCarritoPos(); }
+        const infoDiv = document.getElementById('cli-info-pos');
+        const infoTexto = document.getElementById('cli-info-pos-texto');
+        if (infoDiv && infoTexto) {
+            let info = '👤 ' + nombre;
+            if (tel) info += ' · 📱 ' + tel;
+            if (descuento > 0) info += ' · 💰 Desc. ' + descuento + '%';
+            infoTexto.innerText = info;
+            infoDiv.style.display = 'flex';
+        }
+    }
+
+    function limpiarClientePOS() {
+        document.getElementById('clie-pos').value = '';
+        document.getElementById('desc-pos').value = '';
+        const infoDiv = document.getElementById('cli-info-pos');
+        if (infoDiv) infoDiv.style.display = 'none';
+        actualizarCarritoPos();
+    }
+
+    document.addEventListener('click', function(e) {
+        const sug = document.getElementById('cli-sugerencias');
+        if (sug && !sug.contains(e.target) && e.target.id !== 'clie-pos') sug.style.display = 'none';
+    });
+
+        // ══════════════════════════════════════════════
+    //  COBROS PENDIENTES
+    // ══════════════════════════════════════════════
+
+    function actualizarBadgePendientes() {
+        const pend = historialVentas.filter(v => {
+            const nt = String(v.tipo||'').toLowerCase();
+            return !nt.includes('pago') && parseFloat(v.restante||0) > 0;
+        });
+        const badge = document.getElementById('badge-pendientes');
+        if (!badge) return;
+        if (pend.length > 0) { badge.style.display = 'inline-block'; badge.innerText = pend.length; }
+        else { badge.style.display = 'none'; }
+    }
+
+    function mostrarPendientes() {
+        const pendientes = historialVentas.filter(v => {
+            const nt = String(v.tipo||'').toLowerCase();
+            return !nt.includes('pago') && parseFloat(v.restante||0) > 0;
+        }).sort((a,b) => new Date(a.fecha) - new Date(b.fecha)); // más viejos primero
+
+        const totalPend = pendientes.reduce((s,v) => s + parseFloat(v.restante||0), 0);
+        const totalCobrado = historialVentas.filter(v => {
+            const nt = String(v.tipo||'').toLowerCase();
+            return !nt.includes('pago') && parseFloat(v.abonado||0) > 0 && parseFloat(v.restante||0) === 0;
+        }).reduce((s,v) => s + parseFloat(v.abonado||0), 0);
+
+        document.getElementById('pend-total').innerText = '$' + Math.round(totalPend).toLocaleString('es-AR');
+        document.getElementById('pend-count').innerText = pendientes.length + ' operación' + (pendientes.length !== 1 ? 'es' : '');
+        document.getElementById('pend-cobrado').innerText = '$' + Math.round(totalCobrado).toLocaleString('es-AR');
+
+        if (pendientes.length > 0) {
+            const masViejo = new Date(pendientes[0].fecha);
+            const diasAtras = Math.floor((new Date() - masViejo) / (1000*60*60*24));
+            document.getElementById('pend-mas-viejo').innerText = diasAtras === 0 ? 'Hoy' : 'Hace ' + diasAtras + ' día' + (diasAtras !== 1 ? 's' : '');
+        } else {
+            document.getElementById('pend-mas-viejo').innerText = '—';
+        }
+
+        const tbody = document.getElementById('tabla-pendientes-body');
+        if (pendientes.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--success);font-weight:700;">✅ ¡Sin cobros pendientes! Todo al día.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = pendientes.map(v => {
+            const fecha = new Date(v.fecha).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'});
+            const diasAtras = Math.floor((new Date() - new Date(v.fecha)) / (1000*60*60*24));
+            const urgencia = diasAtras > 14 ? '#fee2e2' : diasAtras > 7 ? '#fef3c7' : 'white';
+            const nt = String(v.tipo||'').toLowerCase();
+            let colorTipo = nt.includes('factura') ? 'var(--success)' : nt.includes('ticket') ? '#334155' : nt.includes('fabrica') ? 'var(--purple)' : '#0ea5e9';
+            const restante = parseFloat(v.restante||0);
+            const abonado = parseFloat(v.abonado||0);
+
+            return `<tr style="background:${urgencia};">
+                <td>
+                    <div style="font-size:13px;">${fecha}</div>
+                    ${diasAtras > 0 ? `<div style="font-size:10px;color:${diasAtras>14?'#ef4444':'#f59e0b'};font-weight:700;">Hace ${diasAtras} día${diasAtras!==1?'s':''}</div>` : ''}
+                </td>
+                <td><strong>${v.cliente||'—'}</strong></td>
+                <td><span style="background:${colorTipo};color:white;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;">${v.tipo}</span></td>
+                <td style="text-align:right;font-weight:700;">$${parseFloat(v.total||0).toLocaleString('es-AR')}</td>
+                <td style="text-align:right;color:var(--success);font-weight:700;">$${abonado.toLocaleString('es-AR')}</td>
+                <td style="text-align:right;color:var(--danger);font-weight:800;font-size:15px;">$${Math.round(restante).toLocaleString('es-AR')}</td>
+                <td style="text-align:center;">
+                    <button onclick="registrarCobro('${v.id_db}','${(v.cliente||'').replace(/'/g,"\\'")}',${restante})"
+                        style="background:var(--success);color:white;border:none;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">
+                        💰 Cobrar
+                    </button>
+                </td>
+            </tr>`;
+        }).join('');
+
+        actualizarBadgePendientes();
+    }
+
+    function registrarCobro(id_db, cliente, restante) {
+        const monto = prompt(`💰 Registrar cobro para: ${cliente}\nSaldo pendiente: $${Math.round(restante).toLocaleString('es-AR')}\n\n¿Cuánto abonó? (dejá vacío para cobro total)`, Math.round(restante));
+        if (monto === null) return;
+        const montoCobrado = parseFloat(monto) || restante;
+        if (montoCobrado <= 0) return alert('❌ Ingresá un monto válido.');
+
+        // Buscar la venta en historialVentas
+        const venta = historialVentas.find(v => v.id_db === id_db);
+        if (!venta) return alert('❌ No se encontró la venta.');
+
+        const nuevoAbonado = parseFloat(venta.abonado||0) + montoCobrado;
+        const nuevoRestante = Math.max(0, parseFloat(venta.restante||0) - montoCobrado);
+
+        dbFirestore.collection('ventas').doc(id_db).update({
+            abonado: Math.round(nuevoAbonado),
+            restante: Math.round(nuevoRestante)
+        }).then(() => {
+            const msg = nuevoRestante === 0
+                ? `✅ Cobro completo registrado.\n${cliente} ya no tiene saldo pendiente.`
+                : `✅ Pago parcial registrado.\nNuevo saldo: $${Math.round(nuevoRestante).toLocaleString('es-AR')}`;
+            alert(msg);
+            mostrarPendientes();
+        }).catch(e => alert('❌ Error: ' + e.message));
+    }
+
+    function exportarPendientesPDF() {
+        const pendientes = historialVentas.filter(v => {
+            const nt = String(v.tipo||'').toLowerCase();
+            return !nt.includes('pago') && parseFloat(v.restante||0) > 0;
+        }).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+        if (pendientes.length === 0) return alert('Sin cobros pendientes para exportar.');
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const fecha = new Date().toLocaleDateString('es-AR');
+        const total = pendientes.reduce((s,v) => s + parseFloat(v.restante||0), 0);
+
+        doc.setFillColor(15,23,42); doc.rect(0,0,210,32,'F');
+        doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(255,255,255);
+        doc.text("COBROS PENDIENTES — LECATEX EXPRESS", 105, 14, {align:"center"});
+        doc.setFontSize(9); doc.setFont("helvetica","normal");
+        doc.text("Generado: " + fecha + " | " + pendientes.length + " operaciones pendientes", 105, 22, {align:"center"});
+        doc.setTextColor(0,0,0);
+
+        doc.setFillColor(254,226,226); doc.rect(10,36,190,16,'F');
+        doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(185,28,28);
+        doc.text("TOTAL PENDIENTE DE COBRO: $" + Math.round(total).toLocaleString('es-AR'), 105, 47, {align:"center"});
+        doc.setTextColor(0,0,0);
+
+        doc.autoTable({
+            startY: 58,
+            head: [['Fecha','Cliente','Tipo','Total Venta','Abonado','RESTA']],
+            body: pendientes.map(v => {
+                const dias = Math.floor((new Date()-new Date(v.fecha))/(1000*60*60*24));
+                return [
+                    new Date(v.fecha).toLocaleDateString('es-AR') + (dias>0?' ('+dias+'d)':''),
+                    v.cliente||'—', v.tipo||'—',
+                    '$'+parseFloat(v.total||0).toLocaleString('es-AR'),
+                    '$'+parseFloat(v.abonado||0).toLocaleString('es-AR'),
+                    '$'+Math.round(parseFloat(v.restante||0)).toLocaleString('es-AR')
+                ];
+            }),
+            theme: 'grid',
+            headStyles: { fillColor: [15,23,42], textColor: 255, fontSize: 8 },
+            bodyStyles: { fontSize: 8 },
+            columnStyles: { 3:{halign:'right'}, 4:{halign:'right'}, 5:{halign:'right', fontStyle:'bold', textColor:[185,28,28]} }
+        });
+
+        doc.save("Cobros_Pendientes_" + fecha.replace(/\//g,'-') + ".pdf");
+    }
+
+
+
+    // ══════════════════════════════════════════════
+    //  BUSCADOR DE CLIENTES EN POS
+    // ══════════════════════════════════════════════
+
+    function abrirBuscadorClientes() {
+        document.getElementById('modal-buscar-cliente').style.display = 'flex';
+        document.getElementById('modal-buscar-cliente').style.alignItems = 'center';
+        document.getElementById('modal-bus-cli').value = '';
+        document.getElementById('modal-lista-cli').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px 0;">Escribí para buscar o dejá vacío para ver todos...</p>';
+        setTimeout(() => {
+            document.getElementById('modal-bus-cli').focus();
+            filtrarModalClientes(); // mostrar todos al abrir
+        }, 100);
+    }
+
+    function cerrarBuscadorClientes() {
+        document.getElementById('modal-buscar-cliente').style.display = 'none';
+    }
+
+    function filtrarModalClientes() {
+        const val = (document.getElementById('modal-bus-cli').value || '').toLowerCase().trim();
+        const lista = document.getElementById('modal-lista-cli');
+
+        const matches = clientesDB.filter(c => {
+            if (!val) return true;
+            const texto = ((c.nombre||'')+' '+(c.apellido||'')+' '+(c.telefono||'')+' '+(c.email||'')).toLowerCase();
+            return texto.includes(val);
+        }).slice(0, 20);
+
+        if (clientesDB.length === 0) {
+            lista.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px 0;">No hay clientes en la base aún.<br>Usá el botón ➕ para agregar el primero.</p>';
+            return;
+        }
+
+        if (matches.length === 0) {
+            lista.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px 0;">Sin resultados para "' + val + '"</p>';
+            return;
+        }
+
+        lista.innerHTML = matches.map(c => {
+            const nombre = ((c.nombre||'')+' '+(c.apellido||'')).trim();
+            const iniciales = ((c.nombre||'?')[0]+(c.apellido||'?')[0]).toUpperCase();
+            const tipoColor = { mayorista:'#7c3aed', revendedor:'#0369a1', empresa:'#065f46', minorista:'#334155' };
+            const color = tipoColor[c.tipo||'minorista'] || '#334155';
+
+            return `<div onclick="seleccionarClienteEnPOS('${nombre.replace(/'/g,"\\'")}','${(c.email||'').replace(/'/g,"\\'")}','${(c.telefono||'').replace(/'/g,"\\'")}','${(c.direccion||'').replace(/'/g,"\\'")}',${c.descuento||0},'${(c.iva||'Consumidor Final').replace(/'/g,"\\'")}')"
+                style="display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--border); border-radius:10px; cursor:pointer; transition:.15s; background:white;"
+                onmouseover="this.style.background='#eff6ff';this.style.borderColor='var(--primary)'"
+                onmouseout="this.style.background='white';this.style.borderColor='var(--border)'">
+                <div style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;">${iniciales}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:800;font-size:14px;">${nombre}</div>
+                    <div style="font-size:12px;color:var(--text-muted);">${c.telefono||''} ${c.email?'· '+c.email:''}</div>
+                    ${c.direccion ? `<div style="font-size:11px;color:var(--text-muted);">📍 ${c.direccion}</div>` : ''}
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+                    <span style="background:${color};color:white;font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;">${(c.tipo||'minorista').toUpperCase()}</span>
+                    ${c.descuento > 0 ? `<span style="background:#dbeafe;color:#1e40af;font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;">💰 ${c.descuento}% desc.</span>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function seleccionarClienteEnPOS(nombre, email, tel, dir, descuento, iva) {
+        // Cerrar el modal
+        cerrarBuscadorClientes();
+
+        // Cargar nombre en el campo
+        document.getElementById('clie-pos').value = nombre;
+
+        // Aplicar descuento si tiene
+        if (descuento > 0) {
+            document.getElementById('desc-pos').value = descuento;
+            actualizarCarritoPos();
+        }
+
+        // Mostrar info del cliente seleccionado
+        const infoDiv = document.getElementById('cli-info-pos');
+        const infoTexto = document.getElementById('cli-info-pos-texto');
+        let info = '👤 ' + nombre;
+        if (tel) info += ' · 📱 ' + tel;
+        if (descuento > 0) info += ' · 💰 Desc. ' + descuento + '% aplicado';
+        if (iva && iva !== 'Consumidor Final') info += ' · 🪪 ' + iva;
+        infoTexto.innerText = info;
+        infoDiv.style.display = 'flex';
+    }
+
+    function limpiarClientePOS() {
+        document.getElementById('clie-pos').value = '';
+        document.getElementById('desc-pos').value = '';
+        document.getElementById('cli-info-pos').style.display = 'none';
+        actualizarCarritoPos();
+    }
+
+    // ══ FORMULARIO CLIENTE (agregar/editar) ══
+    function abrirFormClientePOS(id_db) {
+        const modal = document.getElementById('modal-cli-pos');
+        if (!modal) return;
+        if (id_db) {
+            const c = clientesDB.find(x => x.id_db === id_db);
+            if (!c) return;
+            document.getElementById('cli-pos-modal-titulo').innerText = '✏️ Editar Cliente';
+            document.getElementById('cli-pos-edit-id').value = id_db;
+            document.getElementById('cli-pos-nombre').value    = c.nombre    || '';
+            document.getElementById('cli-pos-apellido').value  = c.apellido  || '';
+            document.getElementById('cli-pos-telefono').value  = c.telefono  || '';
+            document.getElementById('cli-pos-email').value     = c.email     || '';
+            document.getElementById('cli-pos-direccion').value = c.direccion || '';
+            document.getElementById('cli-pos-descuento').value = c.descuento || '';
+            document.getElementById('cli-pos-tipo').value      = c.tipo || 'minorista';
+            document.getElementById('cli-pos-notas').value     = c.notas     || '';
+        } else {
+            document.getElementById('cli-pos-modal-titulo').innerText = '👤 Agregar Cliente';
+            document.getElementById('cli-pos-edit-id').value = '';
+            ['nombre','apellido','telefono','email','direccion','descuento','notas'].forEach(f => {
+                const el = document.getElementById('cli-pos-'+f); if(el) el.value = '';
+            });
+            document.getElementById('cli-pos-tipo').value = 'minorista';
+            const nombrePOS = (document.getElementById('clie-pos')||{value:''}).value.trim();
+            if (nombrePOS) {
+                const p = nombrePOS.split(' ');
+                document.getElementById('cli-pos-nombre').value   = p[0] || '';
+                document.getElementById('cli-pos-apellido').value = p.slice(1).join(' ') || '';
+            }
+        }
+        modal.style.display = 'flex';
+        setTimeout(() => document.getElementById('cli-pos-nombre').focus(), 100);
+    }
+
+    function cerrarFormClientePOS() {
+        const modal = document.getElementById('modal-cli-pos');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function guardarClientePOS() {
+        const nombre   = (document.getElementById('cli-pos-nombre').value   || '').trim();
+        const apellido = (document.getElementById('cli-pos-apellido').value || '').trim();
+        const telefono = (document.getElementById('cli-pos-telefono').value || '').trim();
+        if (!nombre)   return alert('❌ El nombre es obligatorio.');
+        if (!apellido) return alert('❌ El apellido es obligatorio.');
+        if (!telefono) return alert('❌ El teléfono es obligatorio.');
+
+        const datos = {
+            nombre, apellido, telefono,
+            email:     (document.getElementById('cli-pos-email').value     || '').trim(),
+            direccion: (document.getElementById('cli-pos-direccion').value || '').trim(),
+            descuento: parseFloat(document.getElementById('cli-pos-descuento').value) || 0,
+            tipo:      document.getElementById('cli-pos-tipo').value || 'minorista',
+            notas:     (document.getElementById('cli-pos-notas').value     || '').trim(),
+            actualizado: new Date().toISOString()
+        };
+        const editId = document.getElementById('cli-pos-edit-id').value;
+        const nombreCompleto = nombre + ' ' + apellido;
+
+        const promesa = editId
+            ? dbFirestore.collection('clientes').doc(editId).update(datos)
+            : (datos.creado = new Date().toISOString(), dbFirestore.collection('clientes').add(datos));
+
+        promesa.then(() => {
+            cerrarFormClientePOS();
+            // Cargar en el POS si está visible
+            const campoPOS = document.getElementById('clie-pos');
+            if (campoPOS && document.getElementById('vista-pos').style.display !== 'none') {
+                campoPOS.value = nombreCompleto;
+                if (datos.descuento > 0) {
+                    document.getElementById('desc-pos').value = datos.descuento;
+                    actualizarCarritoPos();
+                }
+                const infoDiv   = document.getElementById('cli-info-pos');
+                const infoTexto = document.getElementById('cli-info-pos-texto');
+                if (infoDiv && infoTexto) {
+                    let info = '👤 ' + nombreCompleto;
+                    if (telefono) info += ' · 📱 ' + telefono;
+                    if (datos.descuento > 0) info += ' · 💰 Desc. ' + datos.descuento + '%';
+                    infoTexto.innerText = info;
+                    infoDiv.style.display = 'flex';
+                }
+            }
+            alert(editId ? '✅ Cliente actualizado.' : '✅ Cliente guardado.');
+            if (document.getElementById('vista-clientes') &&
+                document.getElementById('vista-clientes').style.display !== 'none') mostrarClientes();
+        }).catch(e => alert('❌ Error: ' + e.message));
+    }
+
+    // ══ MODAL ACCIÓN COMPROBANTE ══
+    function abrirModalAccion(tipo) {
+        if (carritoPos.length === 0) return alert("❌ Añadí productos primero.");
+        _modalTipo = tipo;
+        const labels = { factura: 'Factura C', ticket: 'Ticket X' };
+        document.getElementById('modal-titulo').innerText = labels[tipo] + ' — ¿Cómo lo enviamos?';
+        document.getElementById('modal-sub').innerText = 'Descargá el PDF o envialo por Gmail.';
+        document.getElementById('modal-email').style.display = 'none';
+        document.getElementById('modal-email').value = '';
+        document.getElementById('modal-btn-enviar').style.display = 'none';
+        document.getElementById('modal-accion').style.display = 'flex';
+    }
+    function cerrarModal() {
+        document.getElementById('modal-accion').style.display = 'none';
+        document.getElementById('modal-email').style.display = 'none';
+        document.getElementById('modal-btn-enviar').style.display = 'none';
+    }
+    function mostrarEmailModal() {
+        document.getElementById('modal-email').style.display = 'block';
+        document.getElementById('modal-btn-enviar').style.display = 'block';
+        document.getElementById('modal-email').focus();
+    }
+    function confirmarAccion(accion) {
+        if (accion === 'imprimir') {
+            cerrarModal();
+            if (_modalTipo === 'factura') {
+                const c = document.getElementById('clie-pos').value || "Consumidor Final";
+                const p = document.getElementById('pago-pos').value;
+                procesarVentaPos(c, p, 'Factura C');
+                alert('✅ FACTURA C REGISTRADA\nTotal: $' + document.getElementById('res-total-pos').innerText);
+                limpiarVentaPos();
+            } else {
+                emitirTicketX();
+            }
+        } else if (accion === 'mail') {
+            const email = document.getElementById('modal-email').value.trim();
+            if (!email) return alert('❌ Ingresá el email del cliente.');
+            cerrarModal();
+            if (_modalTipo === 'factura') _enviarFacturaGmail(email);
+            else _enviarTicketGmail(email);
+        }
+    }
+
+</script>
+
+
+
+
+<div id="vista-pendientes" class="main" style="display:none; flex-direction:column; overflow-y:auto; padding:18px; gap:14px;">
+
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <h2 style="margin:0; flex:1;">⏳ Cobros Pendientes</h2>
+        <button onclick="exportarPendientesPDF()" style="background:var(--dark);color:white;border:none;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;">📄 Exportar PDF</button>
+    </div>
+
+    <!-- Resumen -->
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:14px 20px;flex:1;min-width:160px;">
+            <div style="font-size:11px;font-weight:700;color:#991b1b;text-transform:uppercase;">Total Pendiente</div>
+            <div style="font-size:26px;font-weight:800;color:#b91c1c;" id="pend-total">$0</div>
+            <div style="font-size:11px;color:#dc2626;" id="pend-count">0 operaciones</div>
+        </div>
+        <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:14px 20px;flex:1;min-width:160px;">
+            <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;">Más antiguo</div>
+            <div style="font-size:18px;font-weight:800;color:#b45309;" id="pend-mas-viejo">—</div>
+        </div>
+        <div style="background:#dcfce7;border:1px solid #86efac;border-radius:10px;padding:14px 20px;flex:1;min-width:160px;">
+            <div style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;">Ya cobrado</div>
+            <div style="font-size:26px;font-weight:800;color:#16a34a;" id="pend-cobrado">$0</div>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div style="background:white;border-radius:12px;border:1px solid var(--border);overflow:hidden;">
+        <table class="tabla-reportes">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Tipo</th>
+                    <th style="text-align:right;">Total</th>
+                    <th style="text-align:right;">Abonado</th>
+                    <th style="text-align:right; color:#ef4444;">Resta</th>
+                    <th style="text-align:center;">Acción</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-pendientes-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="vista-clientes" class="main" style="display:none; flex-direction:column; overflow-y:auto; padding:18px; gap:14px;">
+
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <h2 style="margin:0; flex:1; font-size:20px;">👥 Clientes Cargados</h2>
+        <input type="text" id="bus-clientes" placeholder="🔍 Buscar..." oninput="mostrarClientes()" style="width:220px; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+        <button onclick="abrirFormClientePOS()" style="background:var(--primary);color:white;border:none;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;">➕ Nuevo Cliente</button>
+        <button onclick="exportarClientesPDF()" style="background:#0f172a;color:white;border:none;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;">📄 PDF</button>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:12px 18px;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Total</div>
+            <div style="font-size:24px;font-weight:800;color:#2563eb;" id="cli-total-count">0</div>
+        </div>
+        <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:12px 18px;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Con Email</div>
+            <div style="font-size:24px;font-weight:800;color:#10b981;" id="cli-email-count">0</div>
+        </div>
+        <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:12px 18px;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Con Compras</div>
+            <div style="font-size:24px;font-weight:800;color:#f59e0b;" id="cli-compras-count">0</div>
+        </div>
+    </div>
+
+    <!-- Tabla de clientes -->
+    <div style="background:white; border-radius:12px; border:1px solid #e2e8f0; overflow:hidden; flex:1;">
+        <table class="tabla-reportes" style="width:100%;">
+            <thead>
+                <tr>
+                    <th>Nombre y Apellido</th>
+                    <th>Teléfono</th>
+                    <th>Email</th>
+                    <th>Dirección</th>
+                    <th style="text-align:center;">Desc.%</th>
+                    <th style="text-align:center;">Tipo</th>
+                    <th style="text-align:center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="cli-tabla-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Agregar/Editar Cliente -->
+<div id="modal-cli-pos" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,.6); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:26px; width:420px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+            <h3 style="margin:0; font-size:18px;" id="cli-pos-modal-titulo">👤 Agregar Cliente</h3>
+            <button onclick="cerrarFormClientePOS()" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:#94a3b8;">✖</button>
+        </div>
+        <input type="hidden" id="cli-pos-edit-id">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div>
+                <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Nombre <span style="color:#ef4444;">*</span></label>
+                <input type="text" id="cli-pos-nombre" placeholder="Juan">
+            </div>
+            <div>
+                <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Apellido <span style="color:#ef4444;">*</span></label>
+                <input type="text" id="cli-pos-apellido" placeholder="García">
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div>
+                <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Teléfono <span style="color:#ef4444;">*</span></label>
+                <input type="tel" id="cli-pos-telefono" placeholder="1123456789">
+            </div>
+            <div>
+                <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Email</label>
+                <input type="email" id="cli-pos-email" placeholder="juan@mail.com">
+            </div>
+        </div>
+        <div style="margin-bottom:10px;">
+            <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Dirección</label>
+            <input type="text" id="cli-pos-direccion" placeholder="Av. Corrientes 1234">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div>
+                <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">% Desc. habitual</label>
+                <input type="number" id="cli-pos-descuento" placeholder="Ej: 10" min="0" max="100">
+            </div>
+            <div>
+                <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Tipo</label>
+                <select id="cli-pos-tipo" style="width:100%;">
+                    <option value="minorista">Minorista</option>
+                    <option value="mayorista">Mayorista</option>
+                    <option value="revendedor">Revendedor</option>
+                    <option value="empresa">Empresa</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Notas</label>
+            <textarea id="cli-pos-notas" rows="2" style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;" placeholder="Observaciones..."></textarea>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button onclick="guardarClientePOS()" style="flex:2;background:#2563eb;color:white;border:none;padding:13px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;">💾 GUARDAR</button>
+            <button onclick="cerrarFormClientePOS()" style="flex:1;background:#f1f5f9;color:#64748b;border:none;padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">Cancelar</button>
+        </div>
+        <p style="font-size:11px;color:#94a3b8;margin-top:8px;"><span style="color:#ef4444;">*</span> Campos obligatorios</p>
+    </div>
+</div>
+
+<!-- Modal acción comprobante (FC / Ticket X) -->
+<div id="modal-accion" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:28px; width:340px; max-width:95vw; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <h3 style="margin:0 0 6px; font-size:17px;" id="modal-titulo">¿Cómo enviamos el comprobante?</h3>
+        <p style="margin:0 0 18px; font-size:13px; color:#64748b;" id="modal-sub">Elegí una opción para continuar</p>
+        <input type="email" id="modal-email" placeholder="📧 Email del cliente" style="display:none; width:100%; padding:10px 12px; border:1px solid #ef4444; border-radius:8px; font-size:14px; box-sizing:border-box; margin-bottom:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+            <button onclick="confirmarAccion('imprimir')" style="background:#334155;color:white;border:none;padding:14px 10px;font-size:13px;font-weight:800;border-radius:10px;cursor:pointer;">🖨️ DESCARGAR</button>
+            <button onclick="mostrarEmailModal()" style="background:#0ea5e9;color:white;border:none;padding:14px 10px;font-size:13px;font-weight:800;border-radius:10px;cursor:pointer;">📧 GMAIL</button>
+            <button id="modal-btn-enviar" onclick="confirmarAccion('mail')" style="display:none;background:#ea4335;color:white;border:none;padding:14px;font-size:13px;font-weight:800;border-radius:10px;cursor:pointer;grid-column:span 2;">✉️ CONFIRMAR ENVÍO</button>
+            <button onclick="cerrarModal()" style="background:#f1f5f9;color:#64748b;border:none;padding:10px;font-size:13px;font-weight:700;border-radius:10px;cursor:pointer;grid-column:span 2;">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Historial de Compras del Cliente -->
+<div id="modal-historial-cli" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,.55); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:16px; padding:24px; width:640px; max-width:95vw; max-height:88vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="margin:0;" id="cli-hist-titulo">Historial de Compras</h3>
+            <button onclick="cerrarModalHistorial()" style="background:transparent;border:none;font-size:20px;cursor:pointer;color:#64748b;">✖</button>
+        </div>
+        <div id="cli-hist-resumen" style="margin-bottom:14px;"></div>
+        <div id="cli-hist-tabla"></div>
+    </div>
+</div>
+
+</body>
+</html>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
