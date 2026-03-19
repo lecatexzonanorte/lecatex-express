@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presupuestador Lecatex Express</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .calculator-card {
+            background-color: #1e1e1e;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 450px;
+            border: 1px solid #333;
+        }
+        h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #e0e0e0;
+            font-size: 22px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .row-inputs {
+            display: flex;
+            gap: 10px;
+        }
+        .row-inputs > div {
+            flex: 1;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #aaa;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background-color: #2a2a2a;
+            color: #fff;
+            font-size: 15px;
+            box-sizing: border-box;
+            outline: none;
+        }
+        input:focus, select:focus {
+            border-color: #888;
+        }
+        .section-title {
+            font-size: 14px;
+            color: #ff9800;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+        .result-box {
+            margin-top: 25px;
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #4caf50;
+        }
+        .result-breakdown {
+            font-size: 15px;
+            color: #ccc;
+            margin-bottom: 15px;
+            line-height: 1.5;
+            text-align: left;
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .costo-total {
+            color: #4caf50;
+            font-size: 38px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator-card">
+    <h2>Presupuestador Express</h2>
+    
+    <div class="input-group">
+        <label for="metros">Metros a cubrir (m² o ml)</label>
+        <input type="text" inputmode="decimal" id="metros" placeholder="Ej: 33" oninput="calcular()" onkeyup="calcular()">
+    </div>
+
+    <div class="input-group">
+        <label for="producto">Producto Principal</label>
+        <select id="producto" onchange="actualizarInterfaz()">
+            <option value="16|61000|si|Llana Fina">Llana Fina (Rinde 16 m²)</option>
+            <option value="13|61000|si|Llana Media">Llana Media (Rinde 13 m²)</option>
+            <option value="15|61000|si|Rodillo">Rodillo (Rinde 15 m²)</option>
+            <option value="2|130000|si|Lecatex Stone">Lecatex Stone Kit (Rinde 2 m²)</option>
+            <option value="10|90000|no|Membrana 22kg">Membrana de Caucho 22kg (10 m²)</option>
+            <option value="5|65000|no|Membrana 12kg">Membrana de Caucho 12kg (5 m²)</option>
+            <option value="2.5|37000|no|Membrana 6kg">Membrana de Caucho 6kg (2.5 m²)</option>
+            <option value="11|55000|no|Manga Caucho">Manga de Caucho (11 ml)</option>
+            <option value="60|0|no|Látex 20L">Látex Profesional 20 Litros (60 m²)</option>
+            <option value="30|0|no|Látex 10L">Látex Profesional 10 Litros (30 m²)</option>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <label for="precio">Precio Tacho Principal ($)</label>
+        <input type="number" inputmode="numeric" id="precio" value="61000" oninput="calcular()" onkeyup="calcular()">
+    </div>
+
+    <div id="panel-base">
+        <div class="section-title">Precios Fondo Base (Obligatorio para textura)</div>
+        <div class="row-inputs">
+            <div>
+                <label>20 Lts</label>
+                <input type="number" inputmode="numeric" id="precio_base20" value="0" placeholder="$" oninput="calcular()">
+            </div>
+            <div>
+                <label>10 Lts</label>
+                <input type="number" inputmode="numeric" id="precio_base10" value="0" placeholder="$" oninput="calcular()">
+            </div>
+            <div>
+                <label>4 Lts</label>
+                <input type="number" inputmode="numeric" id="precio_base4" value="0" placeholder="$" oninput="calcular()">
+            </div>
+        </div>
+    </div>
+
+    <div class="input-group" style="margin-top:15px;">
+        <label for="cliente">Cliente / Obra (opcional)</label>
+        <input type="text" id="cliente" placeholder="Ej: Juan García - Villa Ballester">
+    </div>
+
+    <div class="result-box">
+        <div class="result-breakdown" id="desglose_materiales">
+            Ingresá los metros para ver el desglose de materiales.
+        </div>
+        <div style="font-size: 14px; color: #aaa; text-transform: uppercase;">Costo Total Final</div>
+        <div class="costo-total" id="resultado_costo">$ 0</div>
+    </div>
+
+    <button onclick="generarPDF()" style="
+        margin-top: 18px;
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #1976d2, #0d47a1);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    ">📄 Generar Presupuesto PDF</button>
+</div>
+
+<script>
+    // Variable global con los datos del último cálculo
+    let datosCalculo = null;
+
+    function actualizarInterfaz() {
+        const select = document.getElementById('producto').value;
+        const datos = select.split('|'); 
+        const precioDefecto = datos[1];
+        const requiereBase = datos[2] === 'si';
+        
+        document.getElementById('precio').value = precioDefecto;
+        
+        const panelBase = document.getElementById('panel-base');
+        panelBase.style.display = requiereBase ? 'block' : 'none';
+        
+        calcular();
+    }
+
+    function calcular() {
+        let metrosInput = document.getElementById('metros').value;
+        const select = document.getElementById('producto').value;
+        const datos = select.split('|');
+        
+        const rendimientoStr = datos[0]; 
+        const requiereBase = datos[2] === 'si';
+        const nombreProd = datos[3];
+
+        metrosInput = metrosInput.replace(',', '.');
+        const metros = parseFloat(metrosInput);
+        const rendimiento = parseFloat(rendimientoStr);
+        const precioPrincipal = parseFloat(document.getElementById('precio').value) || 0; 
+
+        const desgloseDiv = document.getElementById('desglose_materiales');
+        const costoDiv = document.getElementById('resultado_costo');
+
+        if (isNaN(metros) || metros <= 0) {
+            desgloseDiv.innerHTML = "Esperando metros...";
+            costoDiv.innerText = "$ 0";
+            return;
+        }
+
+        const tachosPrincipales = Math.ceil(metros / rendimiento);
+        let costoTotal = tachosPrincipales * precioPrincipal;
+        
+        let textoDesglose = `<strong>${tachosPrincipales}x</strong> Envases de ${nombreProd}<br>`;
+
+        if (requiereBase) {
+            // LÓGICA COMERCIAL PARA FONDO BASE
+            let base20 = Math.floor(metros / 80);
+            let resto = metros % 80;
+            let base10 = 0;
+            let base4 = 0;
+
+            if (resto >= 61) {
+                base20++; // 61 m2 en adelante -> suma uno de 20L
+            } else if (resto >= 26) {
+                base10++; // 26 a 60 m2 -> suma uno de 10L
+            } else if (resto > 0) {
+                base4++;  // 1 a 25 m2 -> suma uno de 4L
+            }
+
+            const p20 = parseFloat(document.getElementById('precio_base20').value) || 0;
+            const p10 = parseFloat(document.getElementById('precio_base10').value) || 0;
+            const p4 = parseFloat(document.getElementById('precio_base4').value) || 0;
+
+            costoTotal += (base20 * p20) + (base10 * p10) + (base4 * p4);
+
+            textoDesglose += `<div style="margin-top:8px; border-top: 1px solid #444; padding-top:8px; color:#ff9800;"><strong>Fondo Base Requerido:</strong><br>`;
+            if (base20 > 0) textoDesglose += `• ${base20}x Envase de 20 Lts<br>`;
+            if (base10 > 0) textoDesglose += `• ${base10}x Envase de 10 Lts<br>`;
+            if (base4 > 0) textoDesglose += `• ${base4}x Envase de 4 Lts<br>`;
+            textoDesglose += `</div>`;
+        }
+
+        const costoFormateado = new Intl.NumberFormat('es-AR', { 
+            style: 'currency', 
+            currency: 'ARS',
+            maximumFractionDigits: 0
+        }).format(costoTotal);
+
+        desgloseDiv.innerHTML = textoDesglose;
+        costoDiv.innerText = costoFormateado;
+
+        // Guardar datos para el PDF
+        datosCalculo = {
+            metros, nombreProd, rendimiento, tachosPrincipales,
+            precioPrincipal, costoTotal, requiereBase
+        };
+
+        if (requiereBase) {
+            let base20 = Math.floor(metros / 80);
+            let resto = metros % 80;
+            let base10 = 0, base4 = 0;
+            if (resto >= 61) base20++;
+            else if (resto >= 26) base10++;
+            else if (resto > 0) base4++;
+            const p20 = parseFloat(document.getElementById('precio_base20').value) || 0;
+            const p10 = parseFloat(document.getElementById('precio_base10').value) || 0;
+            const p4  = parseFloat(document.getElementById('precio_base4').value)  || 0;
+            datosCalculo.base = { base20, base10, base4, p20, p10, p4 };
+        }
+    }
+
+    function fmtMoneda(v) {
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(v);
+    }
+
+    function generarPDF() {
+        if (!datosCalculo || datosCalculo.metros <= 0) {
+            alert('❌ Ingresá los metros primero para calcular.');
+            return;
+        }
+
+        const cliente = (document.getElementById('cliente').value || 'Consumidor Final').trim();
+        const fecha = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // ── Encabezado ──
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, 210, 38, 'F');
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(20);
+        doc.setTextColor(255, 255, 255);
+        doc.text("LECATEX EXPRESS", 105, 15, { align: "center" });
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text("Villa Ballester, Buenos Aires", 105, 22, { align: "center" });
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(52, 211, 153);
+        doc.text("PRESUPUESTO DE MATERIALES", 105, 30, { align: "center" });
+        doc.setTextColor(0, 0, 0);
+
+        // ── Datos cliente y fecha ──
+        doc.setFillColor(248, 250, 252);
+        doc.rect(0, 38, 210, 22, 'F');
+        doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+        doc.setTextColor(30, 30, 30);
+        doc.text("Cliente / Obra:", 15, 48);
+        doc.setFont("helvetica", "normal");
+        doc.text(cliente, 50, 48);
+        doc.setFont("helvetica", "bold");
+        doc.text("Fecha:", 150, 48);
+        doc.setFont("helvetica", "normal");
+        doc.text(fecha, 167, 48);
+        doc.setFont("helvetica", "bold");
+        doc.text("Superficie:", 15, 56);
+        doc.setFont("helvetica", "normal");
+        doc.text(datosCalculo.metros + " m²", 43, 56);
+        doc.setTextColor(0,0,0);
+
+        // ── Tabla de materiales ──
+        const body = [];
+        body.push([
+            '1',
+            datosCalculo.nombreProd,
+            datosCalculo.tachosPrincipales + ' unid.',
+            fmtMoneda(datosCalculo.precioPrincipal),
+            fmtMoneda(datosCalculo.tachosPrincipales * datosCalculo.precioPrincipal)
+        ]);
+
+        if (datosCalculo.requiereBase && datosCalculo.base) {
+            const b = datosCalculo.base;
+            let item = 2;
+            if (b.base20 > 0) body.push([item++, 'Fondo Base 20 Litros', b.base20 + ' unid.', fmtMoneda(b.p20), fmtMoneda(b.base20 * b.p20)]);
+            if (b.base10 > 0) body.push([item++, 'Fondo Base 10 Litros', b.base10 + ' unid.', fmtMoneda(b.p10), fmtMoneda(b.base10 * b.p10)]);
+            if (b.base4  > 0) body.push([item++, 'Fondo Base 4 Litros',  b.base4  + ' unid.', fmtMoneda(b.p4),  fmtMoneda(b.base4  * b.p4)]);
+        }
+
+        doc.autoTable({
+            startY: 66,
+            head: [['#', 'Producto / Descripción', 'Cantidad', 'Precio Unit.', 'Subtotal']],
+            body: body,
+            theme: 'grid',
+            headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 9, fontStyle: 'bold' },
+            bodyStyles: { fontSize: 9, textColor: [30, 30, 30] },
+            columnStyles: {
+                0: { halign: 'center', cellWidth: 12 },
+                2: { halign: 'center', cellWidth: 28 },
+                3: { halign: 'right',  cellWidth: 38 },
+                4: { halign: 'right',  cellWidth: 38, fontStyle: 'bold' }
+            },
+            alternateRowStyles: { fillColor: [248, 250, 252] }
+        });
+
+        // ── Total ──
+        const yF = doc.lastAutoTable.finalY;
+        doc.setFillColor(15, 23, 42);
+        doc.rect(120, yF + 4, 75, 14, 'F');
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(255, 255, 255);
+        doc.text("TOTAL:", 128, yF + 14);
+        doc.setFontSize(13);
+        doc.text(fmtMoneda(datosCalculo.costoTotal), 193, yF + 14, { align: "right" });
+        doc.setTextColor(0, 0, 0);
+
+        // ── Notas al pie ──
+        const yPie = yF + 28;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.text("• Presupuesto válido por 15 días desde la fecha de emisión.", 15, yPie);
+        doc.text("• Los precios pueden variar sin previo aviso.", 15, yPie + 5);
+        doc.text("• Este presupuesto incluye materiales únicamente, no mano de obra.", 15, yPie + 10);
+        doc.text("Lecatex Express — Villa Ballester, Buenos Aires", 105, yPie + 18, { align: "center" });
+
+        const nombreArchivo = cliente.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        doc.save("Presupuesto_Lecatex_" + nombreArchivo + "_" + fecha.replace(/\//g, '-') + ".pdf");
+    }
+
+    actualizarInterfaz();
+</script>
+
+</body>
+</html>
