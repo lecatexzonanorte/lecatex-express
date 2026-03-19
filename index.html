@@ -291,12 +291,13 @@
         <div class="panel checkout" style="border-top: 5px solid var(--primary);">
             <div class="panel-header" style="padding: 10px 15px;">
                 <!-- Campo cliente + botones -->
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
                     <div style="position:relative; flex:1;">
-                        <input type="text" id="clie-pos" placeholder="👤 Cliente / Razón Social" style="border:none; background:transparent; font-weight:bold; font-size:15px; padding:5px 0; width:100%;" oninput="buscarClientesPOS()" autocomplete="off">
-                        <div id="cli-sugerencias" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 20px rgba(0,0,0,.12); z-index:100; max-height:200px; overflow-y:auto;"></div>
+                        <input type="text" id="clie-pos" placeholder="👤 Nombre del cliente..." style="border:none; background:transparent; font-weight:bold; font-size:15px; padding:5px 0; width:100%;" oninput="buscarClientesPOS()" autocomplete="off">
+                        <div id="cli-sugerencias" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.15); z-index:9000; max-height:220px; overflow-y:auto;"></div>
                     </div>
-                    <button onclick="abrirFormClientePOS()" style="background:#10b981;color:white;border:none;padding:7px 10px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">➕ Cliente</button>
+                    <button onclick="abrirModalBuscarCliente()" style="background:#2563eb;color:white;border:none;padding:7px 10px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">🔍 Buscar</button>
+                    <button onclick="abrirFormClientePOS()" style="background:#10b981;color:white;border:none;padding:7px 10px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">➕ Nuevo</button>
                 </div>
                 <!-- Info cliente seleccionado -->
                 <div id="cli-info-pos" style="display:none; background:#eff6ff; border-radius:8px; padding:8px 10px; margin-bottom:8px; font-size:12px; color:#1e40af;">
@@ -671,7 +672,7 @@
         else if (pestana === 'reportes') { document.getElementById('vista-reportes').style.display = 'flex'; mostrarReporteStock(); } 
         else if (pestana === 'ventas') { document.getElementById('vista-ventas').style.display = 'flex'; mostrarReporteVentas(); }
         else if (pestana === 'pendientes') { document.getElementById('vista-pendientes').style.display = 'flex'; mostrarPendientes(); }
-        else if (pestana === 'clientes') { document.getElementById('vista-clientes').style.display = 'flex'; mostrarClientes(); }
+        else if (pestana === 'clientes') { document.getElementById('vista-clientes').style.display = 'flex'; setTimeout(() => mostrarClientes(), 300); }
         if (document.getElementById('sidebar').classList.contains('open')) toggleMenu();
     }
 
@@ -1823,7 +1824,7 @@ Villa Ballester, Buenos Aires`;
     dbFirestore.collection('clientes').orderBy('apellido', 'asc').onSnapshot(snapshot => {
         clientesDB = [];
         snapshot.forEach(doc => { let d = doc.data(); d.id_db = doc.id; clientesDB.push(d); });
-        if (document.getElementById('vista-clientes') && document.getElementById('vista-clientes').style.display !== 'none') mostrarClientes();
+        mostrarClientes(); // refrescar siempre
     }, err => { clientesDB = []; });
 
     function mostrarClientes() {
@@ -2373,6 +2374,83 @@ Villa Ballester, Buenos Aires`;
         }
     }
 
+
+    // ══ MODAL BUSCADOR DE CLIENTES EN POS ══
+    function abrirModalBuscarCliente() {
+        const modal = document.getElementById('modal-buscar-cli');
+        if (!modal) return;
+        modal.style.display = 'flex';
+        document.getElementById('input-buscar-cli').value = '';
+        filtrarModalBuscarCliente();
+        setTimeout(() => document.getElementById('input-buscar-cli').focus(), 100);
+    }
+
+    function cerrarModalBuscarCliente() {
+        const modal = document.getElementById('modal-buscar-cli');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function filtrarModalBuscarCliente() {
+        const val = (document.getElementById('input-buscar-cli').value || '').toLowerCase().trim();
+        const lista = document.getElementById('lista-modal-buscar-cli');
+        if (!lista) return;
+
+        if (clientesDB.length === 0) {
+            lista.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px 0;">No hay clientes cargados aún.</p>';
+            return;
+        }
+
+        const matches = clientesDB.filter(c => {
+            const txt = ((c.nombre||'')+' '+(c.apellido||'')+' '+(c.telefono||'')+' '+(c.email||'')).toLowerCase();
+            return !val || txt.includes(val);
+        }).slice(0, 15);
+
+        if (matches.length === 0) {
+            lista.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px 0;">Sin resultados para "' + val + '"</p>';
+            return;
+        }
+
+        const tipoColor = { mayorista:'#7c3aed', revendedor:'#0369a1', empresa:'#065f46', minorista:'#334155' };
+
+        lista.innerHTML = matches.map(c => {
+            const nombre = ((c.nombre||'')+' '+(c.apellido||'')).trim();
+            const iniciales = ((c.nombre||'?')[0]+(c.apellido||'?')[0]).toUpperCase();
+            const color = tipoColor[c.tipo||'minorista'] || '#334155';
+            return `<div onclick="elegirClienteDelModal('${nombre.replace(/'/g,"\\'")}','${(c.email||'').replace(/'/g,"\\'")}','${(c.telefono||'').replace(/'/g,"\\'")}','${(c.direccion||'').replace(/'/g,"\\'")}',${c.descuento||0},'${(c.iva||'Consumidor Final').replace(/'/g,"\\'")}')"
+                style="display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid #e2e8f0; border-radius:10px; cursor:pointer; background:white; transition:.1s;"
+                onmouseover="this.style.background='#eff6ff'; this.style.borderColor='#2563eb';"
+                onmouseout="this.style.background='white'; this.style.borderColor='#e2e8f0';">
+                <div style="width:38px;height:38px;border-radius:50%;background:#2563eb;color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">${iniciales}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:800;font-size:14px;">${nombre}</div>
+                    <div style="font-size:11px;color:#64748b;">${c.telefono||''} ${c.email?'· '+c.email:''}</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;">
+                    <span style="background:${color};color:white;font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;">${(c.tipo||'minorista').toUpperCase()}</span>
+                    ${(c.descuento||0) > 0 ? `<span style="background:#dbeafe;color:#1e40af;font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;">💰 ${c.descuento}%</span>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function elegirClienteDelModal(nombre, email, tel, dir, descuento, iva) {
+        cerrarModalBuscarCliente();
+        document.getElementById('clie-pos').value = nombre;
+        if (descuento > 0) {
+            document.getElementById('desc-pos').value = descuento;
+            actualizarCarritoPos();
+        }
+        const infoDiv   = document.getElementById('cli-info-pos');
+        const infoTexto = document.getElementById('cli-info-pos-texto');
+        if (infoDiv && infoTexto) {
+            let info = '👤 ' + nombre;
+            if (tel) info += ' · 📱 ' + tel;
+            if (descuento > 0) info += ' · 💰 Desc. ' + descuento + '%';
+            infoTexto.innerText = info;
+            infoDiv.style.display = 'flex';
+        }
+    }
+
 </script>
 
 
@@ -2466,6 +2544,26 @@ Villa Ballester, Buenos Aires`;
 </div>
 
 <!-- Modal Agregar/Editar Cliente -->
+
+<!-- Modal Búsqueda de Clientes -->
+<div id="modal-buscar-cli" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,.6); z-index:9998; align-items:flex-start; justify-content:center; padding-top:60px;">
+    <div style="background:white; border-radius:16px; padding:24px; width:480px; max-width:95vw; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h3 style="margin:0; font-size:17px;">🔍 Buscar Cliente</h3>
+            <button onclick="cerrarModalBuscarCliente()" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:#94a3b8;">✖</button>
+        </div>
+        <input type="text" id="input-buscar-cli" placeholder="Nombre, apellido o teléfono..."
+            oninput="filtrarModalBuscarCliente()"
+            style="margin-bottom:12px; font-size:14px; border:2px solid #2563eb; border-radius:8px; padding:10px 14px; width:100%; box-sizing:border-box;" autocomplete="off">
+        <div id="lista-modal-buscar-cli" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; min-height:80px;">
+            <p style="text-align:center;color:#94a3b8;padding:20px 0;">Escribí para buscar...</p>
+        </div>
+        <button onclick="abrirFormClientePOS()" style="margin-top:12px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; padding:10px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;">
+            ➕ Agregar Cliente Nuevo
+        </button>
+    </div>
+</div>
+
 <div id="modal-cli-pos" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,.6); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:white; border-radius:16px; padding:26px; width:420px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.3);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
