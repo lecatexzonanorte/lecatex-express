@@ -614,13 +614,34 @@
 
     let db = []; let historialVentas = []; let carritoPos = []; let carritoPresup = []; let carritoFabrica = [];
 
-    // ================== LOGIN DESACTIVADO (modo prueba) ==================
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app-content').style.display = 'flex';
-    inicializarNube();
+    // ================== SISTEMA DE LOGIN ==================
+    auth.onAuthStateChanged(user => {
+        const loginScreen = document.getElementById('login-screen');
+        const appContent = document.getElementById('app-content');
+        if (user) {
+            loginScreen.style.display = 'none';
+            appContent.style.display = 'flex';
+            inicializarNube();
+        } else {
+            loginScreen.style.display = 'flex';
+            appContent.style.display = 'none';
+        }
+    });
 
-    function iniciarSesion() {}
-    function cerrarSesion() { location.reload(); }
+    function iniciarSesion() {
+        const email = document.getElementById('login-email').value;
+        const pass = document.getElementById('login-pass').value;
+        if(!email || !pass) return alert("❌ Ingresá correo y contraseña");
+        auth.signInWithEmailAndPassword(email, pass)
+            .catch(error => alert("❌ Error: Correo o contraseña incorrectos."));
+    }
+
+    function cerrarSesion() {
+        if(confirm("¿Estás seguro de cerrar sesión?")) {
+            auth.signOut();
+            toggleMenu();
+        }
+    }
 
     // ================== INICIALIZACIÓN Y SINCRONIZACIÓN EN TIEMPO REAL ==================
     function inicializarNube() {
