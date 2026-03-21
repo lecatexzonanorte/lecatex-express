@@ -238,54 +238,13 @@
 
         /* ── RESPONSIVE MÓVIL ── */
         @media (max-width: 768px) {
-            body { overflow: hidden; }
-            
-            /* En móvil el POS usa tabs en vez de side-by-side */
-            #vista-pos { flex-direction: column !important; padding: 0 !important; gap: 0 !important; }
-            
-            .mob-tabs { display: flex !important; }
-            .panel.inventory { display: none; }
-            .panel.checkout  { display: none; min-width: unset; max-width: unset; }
-            
-            /* Tab activo visible */
-            .panel.inventory.mob-active { display: flex !important; flex: 1; border-radius: 0; border: none; }
-            .panel.checkout.mob-active  { display: flex !important; flex: 1; border-radius: 0; border: none; }
-            
-            /* Grid productos más chico en móvil */
-            .grid-productos { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important; gap: 8px !important; }
-            .pos-card { height: 100px !important; padding: 10px !important; }
-            .prod-price { font-size: 15px !important; }
-            
-            /* Header más compacto */
+            .main { flex-direction: column; padding: 8px; gap: 8px; overflow-y: auto; }
+            .inventory { flex: none !important; min-height: 45vh; }
+            .checkout { min-width: unset !important; max-width: unset !important; flex: none !important; }
+            .grid-productos { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important; gap: 8px !important; }
+            .pos-card { height: 95px !important; padding: 10px !important; }
+            .prod-price { font-size: 14px !important; }
             header { padding: 8px 12px !important; }
-            header strong { font-size: 16px !important; }
-            
-            /* Main con tabs */
-            .main { padding: 0 !important; gap: 0 !important; }
-        }
-        
-        /* Barra de tabs — oculta en desktop */
-        .mob-tabs {
-            display: none;
-            background: #0f172a;
-            border-bottom: 1px solid #1e293b;
-        }
-        .mob-tab {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
-            font-size: 13px;
-            font-weight: 800;
-            color: #64748b;
-            cursor: pointer;
-            border: none;
-            background: transparent;
-            border-bottom: 3px solid transparent;
-            transition: .15s;
-        }
-        .mob-tab.active {
-            color: white;
-            border-bottom-color: #2563eb;
         }
     </style>
 </head>
@@ -345,13 +304,7 @@
     </header>
 
 
-    <div id="vista-pos" class="main" style="flex-direction:column; padding:0; gap:0;">
-    <!-- Tabs solo visibles en móvil -->
-    <div class="mob-tabs" id="pos-mob-tabs">
-        <button class="mob-tab active" id="tab-productos" onclick="mobSwitchTab('productos')">🛒 Productos</button>
-        <button class="mob-tab" id="tab-carrito" onclick="mobSwitchTab('carrito')">🧾 Carrito <span id="mob-carrito-count" style="background:#2563eb;color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px;display:none;">0</span></button>
-    </div>
-    <div style="display:flex; flex:1; overflow:hidden; min-height:0; padding:15px; gap:15px;" id="pos-inner">
+    <div id="vista-pos" class="main">
         <div class="panel inventory">
             <div class="panel-header" style="display:flex; gap: 15px; border-bottom: none; padding-bottom: 0;">
                 <input type="text" id="bus" placeholder="🔍 Buscar producto..." onkeyup="filtrarPos()" style="border-width: 2px; font-size: 16px;">
@@ -2751,60 +2704,6 @@ Villa Ballester, Buenos Aires`;
                 .catch(err => console.log('SW error:', err));
         });
     }
-
-    // ══ TABS MÓVIL POS ══
-    function mobSwitchTab(tab) {
-        const isMobile = window.innerWidth <= 768;
-        if (!isMobile) return;
-
-        const inventory = document.querySelector('#vista-pos .inventory');
-        const checkout  = document.querySelector('#vista-pos .checkout');
-        const tabProds  = document.getElementById('tab-productos');
-        const tabCarro  = document.getElementById('tab-carrito');
-
-        if (tab === 'productos') {
-            if (inventory) { inventory.classList.add('mob-active'); inventory.style.display = 'flex'; }
-            if (checkout)  { checkout.classList.remove('mob-active'); checkout.style.display = 'none'; }
-            if (tabProds)  tabProds.classList.add('active');
-            if (tabCarro)  tabCarro.classList.remove('active');
-        } else {
-            if (checkout)  { checkout.classList.add('mob-active'); checkout.style.display = 'flex'; }
-            if (inventory) { inventory.classList.remove('mob-active'); inventory.style.display = 'none'; }
-            if (tabCarro)  tabCarro.classList.add('active');
-            if (tabProds)  tabProds.classList.remove('active');
-        }
-    }
-
-    // Al agregar producto en móvil, actualizar badge del carrito
-    const _agregarPosOriginal = agregarPos;
-    function agregarPos(idx) {
-        _agregarPosOriginal(idx);
-        const count = carritoPos.length;
-        const badge = document.getElementById('mob-carrito-count');
-        if (badge) {
-            badge.style.display = count > 0 ? 'inline' : 'none';
-            badge.innerText = count;
-        }
-        // En móvil ir al carrito automáticamente al agregar
-        if (window.innerWidth <= 768 && count === 1) {
-            setTimeout(() => mobSwitchTab('carrito'), 300);
-        }
-    }
-
-    // Inicializar layout móvil al cargar
-    function initMobileLayout() {
-        if (window.innerWidth <= 768) {
-            const inventory = document.querySelector('#vista-pos .inventory');
-            const checkout  = document.querySelector('#vista-pos .checkout');
-            const posInner  = document.getElementById('pos-inner');
-            if (posInner) { posInner.style.padding = '0'; posInner.style.gap = '0'; }
-            if (inventory) { inventory.classList.add('mob-active'); }
-            if (checkout)  { checkout.style.display = 'none'; }
-        }
-    }
-
-    window.addEventListener('resize', initMobileLayout);
-    window.addEventListener('load', () => setTimeout(initMobileLayout, 500));
 
 </script>
 </body>
