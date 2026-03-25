@@ -3,9 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Lecatex POS">
+    <meta name="theme-color" content="#020617">
+    
     <title>Lecatex Express - POS Seguro</title>
     
-    <meta name="theme-color" content="#020617">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -14,272 +19,221 @@
     <style>
         .pos-card { transition: all 0.2s; border: 1px solid #1e293b; }
         .pos-card:active { transform: scale(0.95); background: #1e293b; }
-        .sidebar-item { cursor: pointer; transition: 0.2s; }
+        .sidebar-item { cursor: pointer; transition: 0.2s; border-left: 4px solid transparent; }
         .sidebar-item:hover { background: #1e293b; }
-        ::-webkit-scrollbar { width: 4px; }
+        .sidebar-active { background: #1e293b; border-left-color: #3b82f6; color: white; }
+        ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30">
 
     <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center p-6">
-        <div class="w-full max-w-md bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-2xl">
-            <div class="text-center mb-8">
-                <div class="text-4xl mb-2">🛡️</div>
-                <h1 class="text-2xl font-black tracking-tighter text-white">LECATEX <span class="text-blue-500">POS</span></h1>
-                <p class="text-slate-400 text-sm">Acceso Administrativo Seguro</p>
-            </div>
-            <input type="password" id="admin-pass" placeholder="Contraseña de acceso" class="w-full bg-slate-800 border border-slate-700 p-4 rounded-xl text-center text-2xl tracking-[1em] mb-4 focus:outline-none focus:border-blue-500">
-            <button onclick="checkLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20">INGRESAR</button>
+        <div class="w-full max-w-md bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-2xl text-center">
+            <h1 class="text-2xl font-black text-white mb-6 uppercase tracking-tighter">Lecatex <span class="text-blue-500">POS</span></h1>
+            <input type="password" id="admin-pass" placeholder="Contraseña" class="w-full bg-slate-800 border border-slate-700 p-4 rounded-xl text-center text-2xl mb-4 focus:outline-none focus:border-blue-500 text-white">
+            <button onclick="checkLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all">INGRESAR</button>
         </div>
     </div>
 
     <div id="main-app" class="hidden flex h-screen overflow-hidden">
         
-        <aside class="w-20 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-all">
-            <div class="p-4 border-b border-slate-800 flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white">LX</div>
-                <span class="hidden md:block font-bold text-white tracking-tight">Lecatex Express</span>
-            </div>
-            
+        <aside class="w-20 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col">
+            <div class="p-6 border-b border-slate-800 font-black text-xl text-blue-500">LX</div>
             <nav class="flex-1 overflow-y-auto p-2 space-y-1">
-                <div onclick="mostrarSeccion('seccion-pos')" class="sidebar-item p-3 rounded-xl flex items-center gap-4 text-blue-400 bg-blue-500/10 border border-blue-500/20">
-                    <i class="fas fa-th-large text-xl"></i><span class="hidden md:block font-bold">Terminal POS</span>
-                </div>
-                <div onclick="mostrarSeccion('seccion-ventas')" class="sidebar-item p-3 rounded-xl flex items-center gap-4">
-                    <i class="fas fa-history text-xl"></i><span class="hidden md:block">Historial Ventas</span>
-                </div>
-                <div onclick="mostrarSeccion('seccion-ganancia-real')" class="sidebar-item p-3 rounded-xl flex items-center gap-4 text-green-400 bg-green-500/5">
-                    <i class="fas fa-chart-line text-xl"></i><span class="hidden md:block font-bold">Ganancia Real</span>
-                </div>
-                <div onclick="mostrarSeccion('seccion-fabrica')" class="sidebar-item p-3 rounded-xl flex items-center gap-4">
-                    <i class="fas fa-industry text-xl"></i><span class="hidden md:block">Cta. Cte. Fábrica</span>
-                </div>
-                <div onclick="mostrarSeccion('seccion-stock')" class="sidebar-item p-3 rounded-xl flex items-center gap-4">
-                    <i class="fas fa-boxes text-xl"></i><span class="hidden md:block">Inventario</span>
-                </div>
-                <div onclick="mostrarSeccion('seccion-clientes')" class="sidebar-item p-3 rounded-xl flex items-center gap-4">
-                    <i class="fas fa-users text-xl"></i><span class="hidden md:block">Clientes</span>
-                </div>
-                <div onclick="mostrarSeccion('seccion-calculadora')" class="sidebar-item p-3 rounded-xl flex items-center gap-4 text-orange-400">
-                    <i class="fas fa-calculator text-xl"></i><span class="hidden md:block font-bold">Calculadora Kit</span>
-                </div>
+                <div onclick="mostrarSeccion('seccion-pos')" class="sidebar-item p-3 rounded-lg flex items-center gap-4"><i class="fas fa-th"></i><span class="hidden md:block">POS</span></div>
+                <div onclick="mostrarSeccion('seccion-ventas')" class="sidebar-item p-3 rounded-lg flex items-center gap-4"><i class="fas fa-history"></i><span class="hidden md:block">Ventas</span></div>
+                <div onclick="mostrarSeccion('seccion-ganancia-real')" class="sidebar-item p-3 rounded-lg flex items-center gap-4 text-green-400 font-bold"><i class="fas fa-chart-line"></i><span class="hidden md:block">Ganancia Real</span></div>
+                <div onclick="mostrarSeccion('seccion-fabrica')" class="sidebar-item p-3 rounded-lg flex items-center gap-4"><i class="fas fa-industry"></i><span class="hidden md:block">Cta. Cte. Fábrica</span></div>
+                <div onclick="mostrarSeccion('seccion-stock')" class="sidebar-item p-3 rounded-lg flex items-center gap-4"><i class="fas fa-boxes"></i><span class="hidden md:block">Stock</span></div>
+                <div onclick="mostrarSeccion('seccion-clientes')" class="sidebar-item p-3 rounded-lg flex items-center gap-4"><i class="fas fa-users"></i><span class="hidden md:block">Clientes</span></div>
+                <div onclick="mostrarSeccion('seccion-calculadora')" class="sidebar-item p-3 rounded-lg flex items-center gap-4 text-orange-400"><i class="fas fa-calculator"></i><span class="hidden md:block font-bold">Calculadora</span></div>
             </nav>
-
-            <div class="p-4 border-t border-slate-800">
-                <button onclick="logout()" class="w-full text-left p-2 text-slate-500 hover:text-red-400 flex items-center gap-4 transition-colors">
-                    <i class="fas fa-sign-out-alt"></i><span class="hidden md:block text-sm">Salir</span>
-                </button>
-            </div>
         </aside>
 
-        <main class="flex-1 flex flex-col overflow-hidden bg-slate-950 relative">
+        <main class="flex-1 overflow-hidden relative flex flex-col">
             
-            <section id="seccion-ganancia-real" class="hidden h-full flex flex-col p-4 md:p-8">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h2 class="text-3xl font-black text-white">Ganancia Real</h2>
-                        <p class="text-slate-400 text-sm italic">Cálculo: Precio Final - Costo de Reposición</p>
-                    </div>
-                </div>
+            <section id="seccion-ganancia-real" class="hidden h-full flex flex-col p-4 md:p-8 overflow-y-auto">
+                <h2 class="text-3xl font-black text-white mb-2">Ganancia Real</h2>
+                <p class="text-slate-400 text-sm mb-6">Diferencia neta entre Precio de Venta y Costo de Reposición.</p>
 
-                <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 mb-6 shadow-xl">
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 mb-6 shadow-xl">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Fecha Inicio</label>
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Desde</label>
                             <input type="date" id="ganancia-fecha-inicio" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-white">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Fecha Fin</label>
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Hasta</label>
                             <input type="date" id="ganancia-fecha-fin" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-white">
                         </div>
-                        <button onclick="calcularGananciaRealDetallada()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2">
-                            <i class="fas fa-sync-alt"></i> CALCULAR GANANCIA
+                        <button onclick="calcularGananciaRealDetallada()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-green-900/20">
+                            CALCULAR RENTABILIDAD
                         </button>
                     </div>
                 </div>
 
-                <div id="resultado-ganancia" class="flex-1 overflow-y-auto space-y-4 pr-2">
+                <div id="resultado-ganancia" class="space-y-4 pb-10">
+                    <div class="text-center p-10 text-slate-600 border border-dashed border-slate-800 rounded-2xl">
+                        Selecciona un rango de fechas para ver el desglose.
                     </div>
+                </div>
             </section>
 
-            <section id="seccion-ventas" class="hidden h-full flex flex-col p-4 md:p-8">
-                <div class="mb-6">
-                    <h2 class="text-3xl font-black text-white">Historial de Ventas</h2>
+            <section id="seccion-ventas" class="hidden h-full flex flex-col p-4 md:p-8 overflow-y-auto">
+                <h2 class="text-3xl font-black text-white mb-6">Historial de Ventas</h2>
+                <div class="flex flex-col md:flex-row gap-2 mb-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
+                    <input type="date" id="filtro-ventas-desde" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
+                    <input type="date" id="filtro-ventas-hasta" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
+                    <button onclick="filtrarVentasPorFecha()" class="bg-blue-600 px-8 py-3 rounded-xl font-bold">BUSCAR</button>
                 </div>
-                
-                <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 mb-4">
-                    <div class="flex flex-col md:flex-row gap-2">
-                        <input type="date" id="filtro-ventas-desde" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
-                        <input type="date" id="filtro-ventas-hasta" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
-                        <button onclick="filtrarVentasPorFecha()" class="bg-blue-600 px-6 rounded-xl font-bold"><i class="fas fa-search mr-2"></i>Filtrar</button>
-                    </div>
-                </div>
-
-                <div class="flex-1 overflow-auto bg-slate-900 rounded-2xl border border-slate-800">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="sticky top-0 bg-slate-800 text-slate-400 text-xs uppercase tracking-widest">
-                            <tr>
-                                <th class="p-4">Fecha/ID</th>
-                                <th class="p-4">Cliente</th>
-                                <th class="p-4">Total</th>
-                                <th class="p-4">Estado</th>
-                                <th class="p-4">Acción</th>
-                            </tr>
+                <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-800 text-slate-400 text-xs uppercase">
+                            <tr><th class="p-4">ID/Fecha</th><th class="p-4">Cliente</th><th class="p-4">Total</th><th class="p-4">Acción</th></tr>
                         </thead>
                         <tbody id="lista-ventas"></tbody>
                     </table>
                 </div>
             </section>
 
-            <section id="seccion-fabrica" class="hidden h-full flex flex-col p-4 md:p-8">
+            <section id="seccion-fabrica" class="hidden h-full flex flex-col p-4 md:p-8 overflow-y-auto">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-3xl font-black text-white">Cta. Cte. Fábrica</h2>
                     <div class="flex gap-2">
-                        <button onclick="abrirModalPagoFlete()" class="bg-orange-600 hover:bg-orange-700 text-white font-black py-3 px-6 rounded-xl flex items-center gap-2">
+                        <button onclick="abrirModalPagoFlete()" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2">
                             <i class="fas fa-truck"></i> PAGO FLETES
                         </button>
-                        <button onclick="abrirModalPagoFabrica()" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-3 px-6 rounded-xl flex items-center gap-2">
+                        <button onclick="abrirModalPagoFabrica()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2">
                             <i class="fas fa-plus"></i> REGISTRAR PAGO
                         </button>
                     </div>
                 </div>
-
-                <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 mb-4">
-                    <div class="flex flex-col md:flex-row gap-2">
-                        <input type="date" id="filtro-fabrica-desde" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
-                        <input type="date" id="filtro-fabrica-hasta" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
-                        <button onclick="filtrarPagosFabrica()" class="bg-slate-700 px-6 rounded-xl font-bold border border-slate-600">Filtrar Movimientos</button>
-                    </div>
+                <div class="flex flex-col md:flex-row gap-2 mb-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
+                    <input type="date" id="filtro-fabrica-desde" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
+                    <input type="date" id="filtro-fabrica-hasta" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
+                    <button onclick="filtrarPagosFabrica()" class="bg-slate-700 px-8 py-3 rounded-xl font-bold">FILTRAR</button>
                 </div>
-
-                <div id="resumen-fabrica" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    </div>
-
-                <div class="flex-1 overflow-auto bg-slate-900 rounded-2xl border border-slate-800">
+                <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
                     <table class="w-full text-left">
-                        <thead class="bg-slate-800 text-slate-400 text-xs uppercase tracking-widest">
-                            <tr>
-                                <th class="p-4">Fecha</th>
-                                <th class="p-4">Descripción / Tipo</th>
-                                <th class="p-4">Monto</th>
-                            </tr>
+                        <thead class="bg-slate-800 text-slate-400 text-xs uppercase">
+                            <tr><th class="p-4">Fecha</th><th class="p-4">Tipo/Desc</th><th class="p-4">Monto</th></tr>
                         </thead>
                         <tbody id="lista-pagos-fabrica"></tbody>
                     </table>
                 </div>
             </section>
 
-            </main>
+            <section id="seccion-pos" class="hidden h-full"> </section>
+            <section id="seccion-stock" class="hidden h-full"> </section>
+            <section id="seccion-clientes" class="hidden h-full"> </section>
+            <section id="seccion-calculadora" class="hidden h-full"> </section>
+
+        </main>
     </div>
 
     <script type="module">
-        // [Aquí va tu configuración de Firebase ya existente]
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, onSnapshot, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // ... (Tu config de Firebase aquí) ...
+        // CONFIGURE TU FIREBASE AQUÍ
+        const firebaseConfig = { /* Pegue sus credenciales aquí */ };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        // FUNCIONALIDAD: GANANCIA REAL (Punto 5 solicitado)
+        window.db = db; // Global para acceso desde funciones simples
+
+        // NAVEGACION
+        window.mostrarSeccion = function(id) {
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        };
+
+        // LOGIN SIMPLE
+        window.checkLogin = function() {
+            if(document.getElementById('admin-pass').value === "1234") { // Cambie su clave
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                mostrarSeccion('seccion-pos');
+            }
+        };
+
+        // LÓGICA GANANCIA REAL DETALLADA
         window.calcularGananciaRealDetallada = async function() {
             const desde = document.getElementById('ganancia-fecha-inicio').value;
             const hasta = document.getElementById('ganancia-fecha-fin').value;
             const contenedor = document.getElementById('resultado-ganancia');
             
-            if(!desde || !hasta) {
-                alert("Selecciona un rango de fechas para calcular");
-                return;
-            }
+            if(!desde || !hasta) return alert("Seleccione fechas");
 
-            contenedor.innerHTML = '<div class="text-center p-10 text-slate-500"><i class="fas fa-circle-notch fa-spin text-3xl mb-2"></i><br>Procesando ventas...</div>';
-
+            contenedor.innerHTML = '<p class="text-center p-10">Calculando ganancia...</p>';
+            
             const ventasSnap = await getDocs(collection(db, "ventas"));
-            let totalGananciaPeriodo = 0;
-            let html = '<div class="grid grid-cols-1 gap-3">';
+            let totalG = 0;
+            let cardsHTML = '';
 
-            ventasSnap.forEach(docVenta => {
-                const venta = docVenta.data();
-                // Filtro de fecha simple YYYY-MM-DD
+            ventasSnap.forEach(docV => {
+                const venta = docV.data();
                 if(venta.fecha >= desde && venta.fecha <= hasta) {
-                    venta.productos.forEach(prod => {
-                        const precioFinal = prod.precio || 0;
-                        const costo = prod.costo || 0;
-                        const cantidad = prod.cantidad || 1;
-                        const gananciaUnitaria = precioFinal - costo;
-                        const gananciaTotalProducto = gananciaUnitaria * cantidad;
-                        
-                        totalGananciaPeriodo += gananciaTotalProducto;
+                    venta.productos.forEach(p => {
+                        const precio = p.precio || 0;
+                        const costo = p.costo || 0;
+                        const cant = p.cantidad || 1;
+                        const ganUnit = precio - costo;
+                        const ganTot = ganUnit * cant;
+                        totalG += ganTot;
 
-                        html += `
-                            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex justify-between items-center shadow-lg border-l-4 border-l-green-500">
+                        cardsHTML += `
+                            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex justify-between items-center border-l-4 border-l-green-500 shadow-lg">
                                 <div>
-                                    <h4 class="font-black text-white text-lg uppercase">${prod.nombre}</h4>
-                                    <div class="flex gap-3 text-xs mt-1">
-                                        <span class="bg-slate-800 px-2 py-1 rounded text-slate-400">COSTO: $${costo.toLocaleString()}</span>
-                                        <span class="bg-blue-500/10 px-2 py-1 rounded text-blue-400">VENTA: $${precioFinal.toLocaleString()}</span>
-                                        <span class="bg-slate-800 px-2 py-1 rounded text-slate-300">CANT: ${cantidad}</span>
-                                    </div>
-                                    <p class="text-[10px] text-slate-600 mt-2 italic">Ref: Venta #${docVenta.id.substring(0,6)} - ${venta.fecha}</p>
+                                    <h4 class="font-black text-white uppercase text-lg">${p.nombre}</h4>
+                                    <p class="text-xs text-slate-500">Costo: $${costo.toLocaleString()} | Venta: $${precio.toLocaleString()} | Cant: ${cant}</p>
+                                    <p class="text-[10px] text-slate-600 mt-1 italic">${venta.fecha} - Ref: ${docV.id.substring(0,6)}</p>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-slate-500 font-bold uppercase tracking-widest">Ganancia</div>
-                                    <div class="text-2xl font-black text-green-400">$${gananciaTotalProducto.toLocaleString('es-AR')}</div>
+                                    <span class="text-xs text-slate-500 block uppercase font-bold tracking-widest">Ganancia</span>
+                                    <span class="text-2xl font-black text-green-400">+$${ganTot.toLocaleString()}</span>
                                 </div>
                             </div>`;
                     });
                 }
             });
 
-            if (totalGananciaPeriodo === 0) {
-                contenedor.innerHTML = '<div class="bg-slate-900 p-10 rounded-2xl text-center border border-dashed border-slate-800 text-slate-500 font-bold">No se encontraron ventas en este rango de fechas.</div>';
-                return;
+            if(!cardsHTML) {
+                contenedor.innerHTML = '<p class="text-center p-10 text-slate-500 font-bold">No hay ventas registradas en ese periodo.</p>';
+            } else {
+                contenedor.innerHTML = cardsHTML + `
+                    <div class="mt-8 bg-green-600 p-6 rounded-2xl text-center shadow-2xl">
+                        <p class="text-xs uppercase font-black text-green-100 tracking-widest mb-1">Ganancia Neta Total</p>
+                        <h3 class="text-4xl font-black text-white">$${totalG.toLocaleString('es-AR')}</h3>
+                    </div>`;
             }
-
-            html += `</div>
-                <div class="mt-8 bg-green-600 p-6 rounded-2xl shadow-2xl shadow-green-900/20 flex flex-col items-center">
-                    <span class="text-xs font-black text-green-100 uppercase tracking-[0.3em] mb-1">Resultado Neto del Periodo</span>
-                    <h3 class="text-5xl font-black text-white">$${totalGananciaPeriodo.toLocaleString('es-AR')}</h3>
-                </div>`;
-            
-            contenedor.innerHTML = html;
         };
 
-        // FUNCIONALIDAD: PAGO FLETES (Punto 2 solicitado)
+        // LÓGICA PAGO FLETES
         window.abrirModalPagoFlete = async function() {
-            const monto = prompt("💰 REGISTRAR PAGO DE FLETE:\nIngrese el monto pagado:");
-            if (monto && !isNaN(monto)) {
-                try {
-                    await addDoc(collection(db, "pagosFabrica"), {
-                        monto: parseFloat(monto),
-                        fecha: new Date().toISOString().split('T')[0],
-                        tipo: "PAGO FLETE", // Etiqueta para diferenciar
-                        timestamp: serverTimestamp()
-                    });
-                    alert("Pago de flete registrado correctamente");
-                } catch (e) {
-                    console.error("Error al registrar pago flete", e);
-                }
+            const monto = prompt("💸 Ingrese monto de PAGO FLETE:");
+            if(monto && !isNaN(monto)) {
+                await addDoc(collection(db, "pagosFabrica"), {
+                    monto: parseFloat(monto),
+                    tipo: "PAGO FLETE",
+                    fecha: new Date().toISOString().split('T')[0],
+                    timestamp: serverTimestamp()
+                });
+                alert("Flete registrado.");
             }
         };
 
-        // FUNCIONALIDAD: FILTROS POR FECHAS (Puntos 1 y 4)
-        window.filtrarVentasPorFecha = async function() {
-            const desde = document.getElementById('filtro-ventas-desde').value;
-            const hasta = document.getElementById('filtro-ventas-hasta').value;
-            if(!desde || !hasta) return alert("Indica ambas fechas");
-            
-            // Aquí llamarías a tu función de renderizado de tabla pasando estos filtros
-            renderizarVentas(desde, hasta);
+        // FILTROS
+        window.filtrarVentasPorFecha = function() {
+            // Aquí llamarías a tu función existente de refrescar tabla pasando los inputs
+            console.log("Filtrando ventas...");
         };
 
-        window.filtrarPagosFabrica = async function() {
-            const desde = document.getElementById('filtro-fabrica-desde').value;
-            const hasta = document.getElementById('filtro-fabrica-hasta').value;
-            // Lógica similar para filtrar la tabla de fábrica
-            renderizarPagosFabrica(desde, hasta);
+        window.filtrarPagosFabrica = function() {
+            // Aquí llamarías a tu función existente de refrescar tabla de fábrica
+            console.log("Filtrando fábrica...");
         };
-
-        // ... (Resto de tus funciones originales adaptadas para recibir los filtros de fecha)
     </script>
 </body>
 </html>
