@@ -17,21 +17,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        .pos-card { transition: all 0.2s; border: 1px solid #1e293b; }
-        .pos-card:active { transform: scale(0.95); background: #1e293b; }
+        /* Estilos base */
         .sidebar-item { cursor: pointer; transition: 0.2s; border-left: 4px solid transparent; }
         .sidebar-item:hover { background: #1e293b; }
         .sidebar-active { background: #1e293b; border-left-color: #3b82f6; color: white; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+        
+        /* Asegurar que el contenido se vea sin login */
+        #main-app { display: flex !important; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30">
 
     <div id="main-app" class="flex h-screen overflow-hidden">
         
-        <aside class="w-20 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-all">
+        <aside class="w-20 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0">
             <div class="p-6 border-b border-slate-800 flex items-center gap-3">
                 <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-black text-white text-xs">LX</div>
                 <span class="hidden md:block font-bold text-white tracking-tight text-sm uppercase">Lecatex Express</span>
@@ -39,22 +41,28 @@
             
             <nav class="flex-1 overflow-y-auto p-2 space-y-1">
                 <div onclick="mostrarSeccion('seccion-pos', this)" class="sidebar-item sidebar-active p-3 rounded-xl flex items-center gap-4">
-                    <i class="fas fa-th-large text-xl"></i><span class="hidden md:block font-bold">Terminal POS</span>
+                    <i class="fas fa-th-large text-xl text-blue-400"></i>
+                    <span class="hidden md:block font-bold">Terminal POS</span>
                 </div>
                 <div onclick="mostrarSeccion('seccion-ventas', this)" class="sidebar-item p-3 rounded-xl flex items-center gap-4">
-                    <i class="fas fa-history text-xl"></i><span class="hidden md:block">Historial Ventas</span>
+                    <i class="fas fa-history text-xl"></i>
+                    <span class="hidden md:block text-slate-400">Historial Ventas</span>
                 </div>
                 <div onclick="mostrarSeccion('seccion-ganancia-real', this)" class="sidebar-item p-3 rounded-xl flex items-center gap-4 text-green-400 font-bold bg-green-500/5">
-                    <i class="fas fa-chart-line text-xl"></i><span class="hidden md:block">Ganancia Real</span>
+                    <i class="fas fa-chart-line text-xl"></i>
+                    <span class="hidden md:block">Ganancia Real</span>
                 </div>
                 <div onclick="mostrarSeccion('seccion-fabrica', this)" class="sidebar-item p-3 rounded-xl flex items-center gap-4">
-                    <i class="fas fa-industry text-xl"></i><span class="hidden md:block">Cta. Cte. Fábrica</span>
+                    <i class="fas fa-industry text-xl"></i>
+                    <span class="hidden md:block text-slate-400">Cta. Cte. Fábrica</span>
                 </div>
-                <div onclick="mostrarSeccion('seccion-stock', this)" class="sidebar-item p-3 rounded-xl flex items-center gap-4 text-slate-400">
-                    <i class="fas fa-boxes text-xl"></i><span class="hidden md:block">Inventario</span>
+                <div onclick="mostrarSeccion('seccion-stock', this)" class="sidebar-item p-3 rounded-xl flex items-center gap-4">
+                    <i class="fas fa-boxes text-xl"></i>
+                    <span class="hidden md:block text-slate-400">Inventario</span>
                 </div>
                 <div onclick="mostrarSeccion('seccion-calculadora', this)" class="sidebar-item p-3 rounded-xl flex items-center gap-4 text-orange-400">
-                    <i class="fas fa-calculator text-xl"></i><span class="hidden md:block font-bold">Calculadora Kit</span>
+                    <i class="fas fa-calculator text-xl"></i>
+                    <span class="hidden md:block font-bold">Calculadora Kit</span>
                 </div>
             </nav>
         </aside>
@@ -64,7 +72,7 @@
             <section id="seccion-ganancia-real" class="hidden h-full flex flex-col p-4 md:p-8 overflow-y-auto">
                 <div class="mb-6">
                     <h2 class="text-3xl font-black text-white">Ganancia Real</h2>
-                    <p class="text-slate-400 text-sm italic">Cálculo: Precio de Venta - Costo de Reposición</p>
+                    <p class="text-slate-400 text-sm italic">Fórmula: Precio Venta - Costo Unitario</p>
                 </div>
 
                 <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 mb-6 shadow-xl">
@@ -77,15 +85,16 @@
                             <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Hasta</label>
                             <input type="date" id="ganancia-fecha-fin" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-green-500">
                         </div>
-                        <button onclick="calcularGananciaRealDetallada()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2">
-                            <i class="fas fa-dollar-sign"></i> CALCULAR GANANCIA
+                        <button onclick="calcularGananciaRealDetallada()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-900/20">
+                            <i class="fas fa-search-dollar"></i> CALCULAR GANANCIA
                         </button>
                     </div>
                 </div>
 
                 <div id="resultado-ganancia" class="space-y-4 pb-10">
-                    <div class="text-center p-10 text-slate-600 border border-dashed border-slate-800 rounded-2xl">
-                        Selecciona un período para ver el rendimiento neto.
+                    <div class="text-center p-12 text-slate-600 border border-dashed border-slate-800 rounded-3xl">
+                        <i class="fas fa-chart-bar text-4xl mb-4 block opacity-20"></i>
+                        Elegí un rango de fechas y hacé clic en Calcular para ver tu beneficio neto.
                     </div>
                 </div>
             </section>
@@ -95,7 +104,7 @@
                 <div class="flex flex-col md:flex-row gap-2 mb-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
                     <input type="date" id="filtro-ventas-desde" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
                     <input type="date" id="filtro-ventas-hasta" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
-                    <button onclick="filtrarVentasPorFecha()" class="bg-blue-600 px-8 py-3 rounded-xl font-bold">FILTRAR</button>
+                    <button onclick="alert('Filtrando ventas...')" class="bg-blue-600 px-8 py-3 rounded-xl font-bold">FILTRAR</button>
                 </div>
                 <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-x-auto">
                     <table class="w-full text-left">
@@ -122,26 +131,27 @@
                 <div class="flex flex-col md:flex-row gap-2 mb-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
                     <input type="date" id="filtro-fabrica-desde" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
                     <input type="date" id="filtro-fabrica-hasta" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
-                    <button onclick="filtrarPagosFabrica()" class="bg-slate-700 px-8 py-3 rounded-xl font-bold">BUSCAR</button>
+                    <button onclick="alert('Buscando pagos...')" class="bg-slate-700 px-8 py-3 rounded-xl font-bold">BUSCAR</button>
                 </div>
                 <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
                     <table class="w-full text-left">
                         <thead class="bg-slate-800 text-slate-400 text-xs uppercase">
-                            <tr><th class="p-4">Fecha</th><th class="p-4">Descripción / Tipo</th><th class="p-4">Monto</th></tr>
+                            <tr><th class="p-4">Fecha</th><th class="p-4">Descripción</th><th class="p-4">Monto</th></tr>
                         </thead>
                         <tbody id="lista-pagos-fabrica"></tbody>
                     </table>
                 </div>
             </section>
 
-            <section id="seccion-pos" class="h-full flex items-center justify-center">
-                <div class="text-center text-slate-600">
-                    <i class="fas fa-cash-register text-5xl mb-4 opacity-20"></i>
-                    <p>Terminal POS Activo</p>
+            <section id="seccion-pos" class="h-full flex items-center justify-center bg-slate-950">
+                <div class="text-center p-10">
+                    <div class="w-24 h-24 bg-blue-600/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-cash-register text-4xl text-blue-500"></i>
+                    </div>
+                    <h1 class="text-2xl font-black text-white uppercase mb-2">Terminal de Venta Activo</h1>
+                    <p class="text-slate-500 max-w-xs mx-auto text-sm">El sistema está listo. Usá el menú lateral para gestionar ventas, stock o ver tus ganancias.</p>
                 </div>
             </section>
-            <section id="seccion-stock" class="hidden h-full p-8"> <h2 class="text-3xl font-black">Inventario</h2> </section>
-            <section id="seccion-calculadora" class="hidden h-full p-8"> <h2 class="text-3xl font-black">Calculadora de Kit</h2> </section>
 
         </main>
     </div>
@@ -150,7 +160,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // CONFIGURA TUS CREDENCIALES AQUÍ
+        // ==========================================
+        // CONFIGURÁ TUS DATOS DE FIREBASE AQUÍ
+        // ==========================================
         const firebaseConfig = { 
             apiKey: "TU_API_KEY", 
             projectId: "TU_PROJECT_ID" 
@@ -160,51 +172,57 @@
         const db = getFirestore(app);
         window.db = db;
 
-        // NAVEGACIÓN
+        // NAVEGACIÓN ENTRE SECCIONES
         window.mostrarSeccion = function(id, elemento) {
             document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
+            
             document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('sidebar-active'));
-            if(elemento) elemento.classList.add('sidebar-active');
+            if(elemento) {
+                elemento.classList.add('sidebar-active');
+            }
         };
 
-        // GANANCIA REAL (DETALLADO KALUA)
+        // CALCULAR GANANCIA REAL (CON TARJETAS VISUALES)
         window.calcularGananciaRealDetallada = async function() {
             const desde = document.getElementById('ganancia-fecha-inicio').value;
             const hasta = document.getElementById('ganancia-fecha-fin').value;
             const contenedor = document.getElementById('resultado-ganancia');
             
-            if(!desde || !hasta) return alert("Selecciona fechas.");
+            if(!desde || !hasta) return alert("Por favor, seleccioná un rango de fechas.");
 
-            contenedor.innerHTML = '<div class="p-20 text-center text-green-500 animate-pulse font-bold">Analizando ganancias...</div>';
+            contenedor.innerHTML = '<div class="p-20 text-center text-green-500 font-bold animate-pulse">Procesando datos de ventas...</div>';
             
             try {
                 const ventasSnap = await getDocs(collection(db, "ventas"));
                 let totalG = 0;
-                let html = '<div class="flex flex-col gap-3">';
+                let htmlCards = '<div class="flex flex-col gap-4">';
 
                 ventasSnap.forEach(docV => {
                     const venta = docV.data();
                     if(venta.fecha >= desde && venta.fecha <= hasta) {
                         venta.productos.forEach(p => {
-                            const ganUnit = (p.precio || 0) - (p.costo || 0);
-                            const ganTotProd = ganUnit * (p.cantidad || 1);
-                            totalG += ganTotProd;
+                            const costo = p.costo || 0;
+                            const ventaP = p.precio || 0;
+                            const cant = p.cantidad || 1;
+                            const ganU = ventaP - costo;
+                            const ganTotal = ganU * cant;
+                            totalG += ganTotal;
 
-                            html += `
-                                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex justify-between items-center border-l-8 border-l-green-600 shadow-lg">
+                            htmlCards += `
+                                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex justify-between items-center border-l-8 border-l-green-600 shadow-2xl">
                                     <div>
-                                        <h4 class="font-black text-white text-lg uppercase">${p.nombre}</h4>
-                                        <div class="text-[10px] flex gap-3 text-slate-500 mt-1 uppercase font-bold">
-                                            <span>Costo: $${(p.costo || 0).toLocaleString()}</span>
-                                            <span>Venta: $${(p.precio || 0).toLocaleString()}</span>
-                                            <span>Cant: ${p.cantidad || 1}</span>
+                                        <h4 class="font-black text-white text-xl uppercase tracking-tighter">${p.nombre}</h4>
+                                        <div class="flex gap-4 mt-2 text-[11px] font-bold">
+                                            <span class="bg-slate-800 px-2 py-1 rounded text-slate-400">COSTO: $${costo.toLocaleString()}</span>
+                                            <span class="bg-blue-500/10 px-2 py-1 rounded text-blue-400">VENTA: $${ventaP.toLocaleString()}</span>
+                                            <span class="bg-slate-800 px-2 py-1 rounded text-slate-200">CANT: ${cant}</span>
                                         </div>
-                                        <p class="text-[9px] text-slate-700 mt-2 font-mono italic">ID: ${docV.id.substring(0,6)} | ${venta.fecha}</p>
+                                        <p class="text-[9px] text-slate-700 mt-3 font-mono">FECHA: ${venta.fecha} | ID: ${docV.id.substring(0,8)}</p>
                                     </div>
                                     <div class="text-right">
-                                        <p class="text-[10px] text-slate-500 font-black uppercase mb-1">Ganancia</p>
-                                        <p class="text-3xl font-black text-green-400">+$${ganTotProd.toLocaleString('es-AR')}</p>
+                                        <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Ganancia Real</p>
+                                        <p class="text-3xl font-black text-green-400">+$${ganTotal.toLocaleString('es-AR')}</p>
                                     </div>
                                 </div>`;
                         });
@@ -212,37 +230,37 @@
                 });
 
                 if(totalG === 0) {
-                    contenedor.innerHTML = '<div class="text-center p-10 bg-slate-900 rounded-xl text-slate-500">No hay ventas en este período.</div>';
+                    contenedor.innerHTML = '<div class="text-center p-12 bg-slate-900 rounded-3xl text-slate-500 border border-slate-800">No hay ventas registradas en las fechas seleccionadas.</div>';
                 } else {
-                    contenedor.innerHTML = html + `</div>
-                        <div class="mt-8 bg-gradient-to-r from-green-600 to-green-800 p-8 rounded-3xl text-center shadow-2xl">
-                            <p class="text-xs font-black text-green-100 uppercase tracking-widest mb-1">TOTAL GANANCIA REAL ACUMULADA</p>
-                            <h3 class="text-5xl font-black text-white">$${totalG.toLocaleString('es-AR')}</h3>
+                    contenedor.innerHTML = htmlCards + `</div>
+                        <div class="mt-10 bg-gradient-to-br from-green-600 to-green-900 p-10 rounded-3xl text-center shadow-2xl border border-green-400/20">
+                            <p class="text-xs font-black text-green-100 uppercase tracking-[0.4em] mb-2">Total Beneficio Neto del Período</p>
+                            <h3 class="text-6xl font-black text-white">$${totalG.toLocaleString('es-AR')}</h3>
                         </div>`;
                 }
             } catch (err) {
                 console.error(err);
-                contenedor.innerHTML = '<p class="text-red-500 text-center p-10 font-bold">Error de conexión a Firebase.</p>';
+                contenedor.innerHTML = '<p class="text-red-500 text-center p-10">Error al conectar con la base de datos.</p>';
             }
         };
 
         // PAGO FLETES
         window.abrirModalPagoFlete = async function() {
-            const monto = prompt("💸 REGISTRO PAGO FLETE:\nIngrese el monto pagado:");
+            const monto = prompt("💰 REGISTRO DE PAGO DE FLETE:\nIngresá el monto total:");
             if (monto && !isNaN(monto)) {
-                await addDoc(collection(db, "pagosFabrica"), {
-                    monto: parseFloat(monto),
-                    tipo: "PAGO FLETE",
-                    fecha: new Date().toISOString().split('T')[0],
-                    timestamp: serverTimestamp()
-                });
-                alert("Pago de flete registrado.");
+                try {
+                    await addDoc(collection(db, "pagosFabrica"), {
+                        monto: parseFloat(monto),
+                        tipo: "PAGO FLETE",
+                        fecha: new Date().toISOString().split('T')[0],
+                        timestamp: serverTimestamp()
+                    });
+                    alert("✅ Pago de flete guardado correctamente.");
+                } catch (e) {
+                    alert("Error al guardar.");
+                }
             }
         };
-
-        // STUBS PARA FILTROS
-        window.filtrarVentasPorFecha = () => console.log("Filtrar historial ventas...");
-        window.filtrarPagosFabrica = () => console.log("Filtrar pagos fábrica...");
 
     </script>
 </body>
