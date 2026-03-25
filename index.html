@@ -29,26 +29,12 @@
 </head>
 <body class="bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30">
 
-    <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center p-6">
-        <div class="w-full max-w-md bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-2xl text-center">
-            <div class="text-5xl mb-4">🛡️</div>
-            <h1 class="text-2xl font-black text-white mb-6 uppercase tracking-tighter">LECATEX <span class="text-blue-500">POS</span></h1>
-            <input type="password" id="admin-pass" placeholder="Contraseña de acceso" 
-                   class="w-full bg-slate-800 border border-slate-700 p-4 rounded-xl text-center text-2xl mb-4 focus:outline-none focus:border-blue-500 text-white"
-                   onkeypress="if(event.key === 'Enter') checkLogin()">
-            <button onclick="checkLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20">
-                INGRESAR SISTEMA
-            </button>
-            <p id="login-error" class="text-red-500 text-sm mt-4 hidden">Contraseña incorrecta. Reintente.</p>
-        </div>
-    </div>
-
-    <div id="main-app" class="hidden flex h-screen overflow-hidden">
+    <div id="main-app" class="flex h-screen overflow-hidden">
         
         <aside class="w-20 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-all">
             <div class="p-6 border-b border-slate-800 flex items-center gap-3">
-                <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-black text-white">LX</div>
-                <span class="hidden md:block font-bold text-white tracking-tight">Lecatex Express</span>
+                <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center font-black text-white text-xs">LX</div>
+                <span class="hidden md:block font-bold text-white tracking-tight text-sm uppercase">Lecatex Express</span>
             </div>
             
             <nav class="flex-1 overflow-y-auto p-2 space-y-1">
@@ -65,7 +51,7 @@
                     <i class="fas fa-industry text-xl"></i><span class="hidden md:block">Cta. Cte. Fábrica</span>
                 </div>
                 <div onclick="mostrarSeccion('seccion-stock', this)" class="sidebar-item p-3 rounded-xl flex items-center gap-4 text-slate-400">
-                    <i class="fas fa-boxes text-xl"></i><span class="hidden md:block text-sm">Inventario</span>
+                    <i class="fas fa-boxes text-xl"></i><span class="hidden md:block">Inventario</span>
                 </div>
                 <div onclick="mostrarSeccion('seccion-calculadora', this)" class="sidebar-item p-3 rounded-xl flex items-center gap-4 text-orange-400">
                     <i class="fas fa-calculator text-xl"></i><span class="hidden md:block font-bold">Calculadora Kit</span>
@@ -78,28 +64,28 @@
             <section id="seccion-ganancia-real" class="hidden h-full flex flex-col p-4 md:p-8 overflow-y-auto">
                 <div class="mb-6">
                     <h2 class="text-3xl font-black text-white">Ganancia Real</h2>
-                    <p class="text-slate-400 text-sm italic">Desglose: Precio Final - Costo de Reposición</p>
+                    <p class="text-slate-400 text-sm italic">Cálculo: Precio de Venta - Costo de Reposición</p>
                 </div>
 
                 <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 mb-6 shadow-xl">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Fecha Inicio</label>
-                            <input type="date" id="ganancia-fecha-inicio" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-white focus:border-green-500 outline-none">
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Desde</label>
+                            <input type="date" id="ganancia-fecha-inicio" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-green-500">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Fecha Fin</label>
-                            <input type="date" id="ganancia-fecha-fin" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-white focus:border-green-500 outline-none">
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Hasta</label>
+                            <input type="date" id="ganancia-fecha-fin" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-green-500">
                         </div>
-                        <button onclick="calcularGananciaRealDetallada()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-green-900/20">
-                            <i class="fas fa-search-dollar mr-2"></i> CALCULAR
+                        <button onclick="calcularGananciaRealDetallada()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-dollar-sign"></i> CALCULAR GANANCIA
                         </button>
                     </div>
                 </div>
 
                 <div id="resultado-ganancia" class="space-y-4 pb-10">
                     <div class="text-center p-10 text-slate-600 border border-dashed border-slate-800 rounded-2xl">
-                        Selecciona fechas para ver el rendimiento de ventas.
+                        Selecciona un período para ver el rendimiento neto.
                     </div>
                 </div>
             </section>
@@ -109,11 +95,11 @@
                 <div class="flex flex-col md:flex-row gap-2 mb-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
                     <input type="date" id="filtro-ventas-desde" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
                     <input type="date" id="filtro-ventas-hasta" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
-                    <button onclick="filtrarVentas()" class="bg-blue-600 px-8 py-3 rounded-xl font-bold">FILTRAR VENTAS</button>
+                    <button onclick="filtrarVentasPorFecha()" class="bg-blue-600 px-8 py-3 rounded-xl font-bold">FILTRAR</button>
                 </div>
                 <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-slate-800 text-slate-400 text-xs uppercase tracking-tighter">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-800 text-slate-400 text-xs uppercase">
                             <tr><th class="p-4">Fecha</th><th class="p-4">Cliente</th><th class="p-4">Total</th><th class="p-4">Acciones</th></tr>
                         </thead>
                         <tbody id="lista-ventas"></tbody>
@@ -126,22 +112,22 @@
                     <h2 class="text-3xl font-black text-white">Cta. Cte. Fábrica</h2>
                     <div class="flex gap-2 w-full md:w-auto">
                         <button onclick="abrirModalPagoFlete()" class="flex-1 md:flex-none bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2">
-                            <i class="fas fa-truck"></i> PAGO FLETES
+                            <i class="fas fa-truck text-xs"></i> PAGO FLETES
                         </button>
                         <button onclick="abrirModalPagoFabrica()" class="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2">
-                            <i class="fas fa-plus"></i> PAGAR FÁBRICA
+                            <i class="fas fa-plus text-xs"></i> PAGO FÁBRICA
                         </button>
                     </div>
                 </div>
                 <div class="flex flex-col md:flex-row gap-2 mb-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
                     <input type="date" id="filtro-fabrica-desde" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
                     <input type="date" id="filtro-fabrica-hasta" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
-                    <button onclick="filtrarFabrica()" class="bg-slate-700 px-8 py-3 rounded-xl font-bold border border-slate-600">BUSCAR PAGOS</button>
+                    <button onclick="filtrarPagosFabrica()" class="bg-slate-700 px-8 py-3 rounded-xl font-bold">BUSCAR</button>
                 </div>
                 <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
                     <table class="w-full text-left">
                         <thead class="bg-slate-800 text-slate-400 text-xs uppercase">
-                            <tr><th class="p-4">Fecha</th><th class="p-4">Descripción</th><th class="p-4">Monto</th></tr>
+                            <tr><th class="p-4">Fecha</th><th class="p-4">Descripción / Tipo</th><th class="p-4">Monto</th></tr>
                         </thead>
                         <tbody id="lista-pagos-fabrica"></tbody>
                     </table>
@@ -149,163 +135,115 @@
             </section>
 
             <section id="seccion-pos" class="h-full flex items-center justify-center">
-                <div class="text-center">
-                    <i class="fas fa-th-large text-6xl text-slate-800 mb-4"></i>
-                    <p class="text-slate-500">Módulo Terminal de Venta Cargado</p>
-                    <button onclick="alert('Cargando productos...')" class="mt-4 bg-blue-600/20 text-blue-400 px-6 py-2 rounded-full border border-blue-500/30">Refrescar Stock</button>
+                <div class="text-center text-slate-600">
+                    <i class="fas fa-cash-register text-5xl mb-4 opacity-20"></i>
+                    <p>Terminal POS Activo</p>
                 </div>
             </section>
+            <section id="seccion-stock" class="hidden h-full p-8"> <h2 class="text-3xl font-black">Inventario</h2> </section>
+            <section id="seccion-calculadora" class="hidden h-full p-8"> <h2 class="text-3xl font-black">Calculadora de Kit</h2> </section>
 
         </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, serverTimestamp, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // ==========================================
-        // 1. PEGA TUS CREDENCIALES AQUÍ ABAJO
-        // ==========================================
-        const firebaseConfig = {
-            apiKey: "TU_API_KEY",
-            authDomain: "TU_DOMINIO",
-            projectId: "TU_PROJECT_ID",
-            storageBucket: "TU_BUCKET",
-            messagingSenderId: "TU_SENDER_ID",
-            appId: "TU_APP_ID"
+        // CONFIGURA TUS CREDENCIALES AQUÍ
+        const firebaseConfig = { 
+            apiKey: "TU_API_KEY", 
+            projectId: "TU_PROJECT_ID" 
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         window.db = db;
 
-        // ==========================================
-        // 2. FUNCIÓN DE LOGIN CORREGIDA
-        // ==========================================
-        window.checkLogin = function() {
-            const passInput = document.getElementById('admin-pass');
-            const errorMsg = document.getElementById('login-error');
-            
-            // LA CONTRASEÑA ES 1234
-            if(passInput.value === "1234") {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('main-app').classList.remove('hidden');
-                mostrarSeccion('seccion-pos');
-                // Aquí podrías disparar la carga inicial de datos:
-                // cargarProductos();
-                // cargarVentas();
-            } else {
-                errorMsg.classList.remove('hidden');
-                passInput.value = "";
-                passInput.focus();
-                setTimeout(() => errorMsg.classList.add('hidden'), 3000);
-            }
-        };
-
-        // ==========================================
-        // 3. NAVEGACIÓN
-        // ==========================================
+        // NAVEGACIÓN
         window.mostrarSeccion = function(id, elemento) {
             document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
-            
-            if(elemento) {
-                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('sidebar-active'));
-                elemento.classList.add('sidebar-active');
-            }
+            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('sidebar-active'));
+            if(elemento) elemento.classList.add('sidebar-active');
         };
 
-        // ==========================================
-        // 4. GANANCIA REAL (DETALLE KALUA)
-        // ==========================================
+        // GANANCIA REAL (DETALLADO KALUA)
         window.calcularGananciaRealDetallada = async function() {
             const desde = document.getElementById('ganancia-fecha-inicio').value;
             const hasta = document.getElementById('ganancia-fecha-fin').value;
             const contenedor = document.getElementById('resultado-ganancia');
             
-            if(!desde || !hasta) return alert("Selecciona un rango de fechas.");
+            if(!desde || !hasta) return alert("Selecciona fechas.");
 
-            contenedor.innerHTML = `
-                <div class="flex flex-col items-center justify-center p-20 text-blue-500">
-                    <i class="fas fa-circle-notch fa-spin text-4xl mb-4"></i>
-                    <p class="font-bold animate-pulse">Procesando rentabilidad...</p>
-                </div>`;
+            contenedor.innerHTML = '<div class="p-20 text-center text-green-500 animate-pulse font-bold">Analizando ganancias...</div>';
             
             try {
                 const ventasSnap = await getDocs(collection(db, "ventas"));
-                let totalGanancia = 0;
-                let htmlCards = '<div class="grid grid-cols-1 gap-4">';
+                let totalG = 0;
+                let html = '<div class="flex flex-col gap-3">';
 
                 ventasSnap.forEach(docV => {
                     const venta = docV.data();
                     if(venta.fecha >= desde && venta.fecha <= hasta) {
                         venta.productos.forEach(p => {
-                            const pVenta = p.precio || 0;
-                            const pCosto = p.costo || 0;
-                            const cant = p.cantidad || 1;
-                            const ganU = pVenta - pCosto;
-                            const ganTotal = ganU * cant;
-                            totalGanancia += ganTotal;
+                            const ganUnit = (p.precio || 0) - (p.costo || 0);
+                            const ganTotProd = ganUnit * (p.cantidad || 1);
+                            totalG += ganTotProd;
 
-                            htmlCards += `
-                                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex justify-between items-center border-l-8 border-l-green-600 shadow-xl transition-transform hover:scale-[1.01]">
+                            html += `
+                                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex justify-between items-center border-l-8 border-l-green-600 shadow-lg">
                                     <div>
-                                        <h4 class="font-black text-white text-xl uppercase tracking-tight">${p.nombre}</h4>
-                                        <div class="flex gap-4 mt-2">
-                                            <span class="text-[10px] font-bold bg-slate-800 px-2 py-1 rounded text-slate-400">COSTO: $${pCosto.toLocaleString()}</span>
-                                            <span class="text-[10px] font-bold bg-blue-500/10 px-2 py-1 rounded text-blue-400">VENTA: $${pVenta.toLocaleString()}</span>
-                                            <span class="text-[10px] font-bold bg-slate-800 px-2 py-1 rounded text-slate-200">CANT: ${cant}</span>
+                                        <h4 class="font-black text-white text-lg uppercase">${p.nombre}</h4>
+                                        <div class="text-[10px] flex gap-3 text-slate-500 mt-1 uppercase font-bold">
+                                            <span>Costo: $${(p.costo || 0).toLocaleString()}</span>
+                                            <span>Venta: $${(p.precio || 0).toLocaleString()}</span>
+                                            <span>Cant: ${p.cantidad || 1}</span>
                                         </div>
-                                        <p class="text-[10px] text-slate-600 mt-3 font-mono">FECHA: ${venta.fecha} | ID: ${docV.id.substring(0,8)}</p>
+                                        <p class="text-[9px] text-slate-700 mt-2 font-mono italic">ID: ${docV.id.substring(0,6)} | ${venta.fecha}</p>
                                     </div>
                                     <div class="text-right">
-                                        <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Ganancia Neta</p>
-                                        <p class="text-3xl font-black text-green-400">$${ganTotal.toLocaleString('es-AR')}</p>
+                                        <p class="text-[10px] text-slate-500 font-black uppercase mb-1">Ganancia</p>
+                                        <p class="text-3xl font-black text-green-400">+$${ganTotProd.toLocaleString('es-AR')}</p>
                                     </div>
                                 </div>`;
                         });
                     }
                 });
 
-                if(totalGanancia === 0) {
-                    contenedor.innerHTML = '<div class="text-center p-10 bg-slate-900 rounded-2xl text-slate-500 border border-slate-800">No se encontraron ventas registradas en ese periodo.</div>';
+                if(totalG === 0) {
+                    contenedor.innerHTML = '<div class="text-center p-10 bg-slate-900 rounded-xl text-slate-500">No hay ventas en este período.</div>';
                 } else {
-                    contenedor.innerHTML = htmlCards + `</div>
-                        <div class="mt-10 bg-gradient-to-br from-green-600 to-green-800 p-8 rounded-3xl text-center shadow-2xl">
-                            <p class="text-xs font-black text-green-100 uppercase tracking-[0.4em] mb-2">Total Ganancia Real Acumulada</p>
-                            <h3 class="text-6xl font-black text-white">$${totalGanancia.toLocaleString('es-AR')}</h3>
+                    contenedor.innerHTML = html + `</div>
+                        <div class="mt-8 bg-gradient-to-r from-green-600 to-green-800 p-8 rounded-3xl text-center shadow-2xl">
+                            <p class="text-xs font-black text-green-100 uppercase tracking-widest mb-1">TOTAL GANANCIA REAL ACUMULADA</p>
+                            <h3 class="text-5xl font-black text-white">$${totalG.toLocaleString('es-AR')}</h3>
                         </div>`;
                 }
             } catch (err) {
                 console.error(err);
-                contenedor.innerHTML = '<p class="text-red-500 text-center">Error al conectar con la base de datos.</p>';
+                contenedor.innerHTML = '<p class="text-red-500 text-center p-10 font-bold">Error de conexión a Firebase.</p>';
             }
         };
 
-        // ==========================================
-        // 5. PAGO FLETES
-        // ==========================================
+        // PAGO FLETES
         window.abrirModalPagoFlete = async function() {
-            const monto = prompt("💰 REGISTRO DE PAGO DE FLETE:\nIngrese el monto total pagado:");
+            const monto = prompt("💸 REGISTRO PAGO FLETE:\nIngrese el monto pagado:");
             if (monto && !isNaN(monto)) {
-                try {
-                    await addDoc(collection(db, "pagosFabrica"), {
-                        monto: parseFloat(monto),
-                        tipo: "PAGO FLETE",
-                        fecha: new Date().toISOString().split('T')[0],
-                        timestamp: serverTimestamp()
-                    });
-                    alert("✅ Pago de flete guardado con éxito.");
-                } catch (e) {
-                    alert("Error al guardar flete.");
-                }
+                await addDoc(collection(db, "pagosFabrica"), {
+                    monto: parseFloat(monto),
+                    tipo: "PAGO FLETE",
+                    fecha: new Date().toISOString().split('T')[0],
+                    timestamp: serverTimestamp()
+                });
+                alert("Pago de flete registrado.");
             }
         };
 
-        // Placeholders para filtros (conectar con tus funciones de renderizado actuales)
-        window.filtrarVentas = () => alert("Filtrando ventas por fecha...");
-        window.filtrarFabrica = () => alert("Filtrando pagos de fábrica...");
-        
+        // STUBS PARA FILTROS
+        window.filtrarVentasPorFecha = () => console.log("Filtrar historial ventas...");
+        window.filtrarPagosFabrica = () => console.log("Filtrar pagos fábrica...");
+
     </script>
 </body>
 </html>
