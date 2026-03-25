@@ -278,10 +278,10 @@
             <button class="menu-btn" id="btn-stock" onclick="cambiarPestana('stock')">➕ Crear Producto Nuevo</button>
             <button class="menu-btn" id="btn-reportes" onclick="cambiarPestana('reportes')">📊 Reportes de Inventario <span id="badge-stock" style="display:none;background:#ef4444;color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:10px;margin-left:auto;">0</span></button>
             <button class="menu-btn" id="btn-ventas" onclick="cambiarPestana('ventas')">📈 Historial de Ventas</button>
+            <button class="menu-btn" id="btn-ganancia" onclick="cambiarPestana('ganancia')">💰 Ganancia Real</button>
             <button class="menu-btn" id="btn-clientes" onclick="cambiarPestana('clientes')">👥 Clientes</button>
             <!-- Cobros Pendientes oculto del menú -->
             
-            <button class="menu-btn" id="btn-fletes" onclick="cambiarPestana('fletes')">🚚 Pago a Fletes</button>
             <button class="menu-btn btn-logout" onclick="cerrarSesion()">🔒 Cerrar Sesión</button>
         </div>
         <div style="padding: 20px; border-top: 1px solid #1e293b; color: #64748b; font-size: 12px; text-align: center;">
@@ -477,21 +477,34 @@
 
     <div id="vista-deuda" class="main" style="display: none; flex-direction: column;">
         <div class="panel" style="flex: 1; border-top: 5px solid var(--danger);">
-            <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; background: #fef2f2;">
+            <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; background: #fef2f2; flex-wrap:wrap; gap:10px;">
                 <h2 style="margin: 0; color: #991b1b;">🏢 Estado de Cuenta Corriente (Fábrica Matriz)</h2>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <label style="font-size:12px;font-weight:700;color:#991b1b;">Desde:</label>
+                    <input type="date" id="deuda-fecha-desde" onchange="mostrarDeudaFabrica()" style="padding:7px;font-size:13px;border:1px solid #fca5a5;border-radius:6px;width:140px;">
+                    <label style="font-size:12px;font-weight:700;color:#991b1b;">Hasta:</label>
+                    <input type="date" id="deuda-fecha-hasta" onchange="mostrarDeudaFabrica()" style="padding:7px;font-size:13px;border:1px solid #fca5a5;border-radius:6px;width:140px;">
+                    <button onclick="limpiarFiltroDeuda()" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">✖ Todo</button>
+                </div>
             </div>
             
             <div style="display: flex; gap: 15px; margin: 15px; flex-wrap: wrap;">
-                <div id="caja-saldo-fabrica" class="resumen-caja" style="flex: 2; border-color: #f87171; background: #fee2e2; min-width: 300px;">
+                <div id="caja-saldo-fabrica" class="resumen-caja" style="flex: 2; border-color: #f87171; background: #fee2e2; min-width: 280px;">
                     <div id="titulo-saldo-fabrica" style="color: #7f1d1d; font-size: 16px;"><strong>Total Deuda Pendiente a Pagar:</strong></div>
                     <div style="font-size: 28px; font-weight: 800; color: #b91c1c;">$<span id="total-deuda-fabrica">0</span></div>
                 </div>
 
-                <div class="resumen-caja" style="flex: 1; background: #f8fafc; flex-direction: column; align-items: stretch; gap: 10px; border-color: #cbd5e1; min-width: 300px;">
-                    <div style="font-size: 14px; font-weight: bold; color: var(--text-main);">➕ Registrar Pago a Fábrica</div>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="number" id="monto-pago-manual" placeholder="Monto transferido $" style="flex: 1;">
-                        <button class="btn-pos" style="background: var(--success); padding: 10px 20px;" onclick="registrarPagoManualFabrica()">PAGAR</button>
+                <div class="resumen-caja" style="flex: 1; background: #f8fafc; flex-direction: column; align-items: stretch; gap: 10px; border-color: #cbd5e1; min-width: 260px;">
+                    <div style="font-size: 13px; font-weight: bold; color: var(--text-main);">➕ Registrar Pago a Fábrica</div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="number" id="monto-pago-manual" placeholder="Monto $" style="flex: 1;">
+                        <button class="btn-pos" style="background: var(--success); padding: 10px 16px;font-size:13px;" onclick="registrarPagoManualFabrica()">PAGAR</button>
+                    </div>
+                    <div style="font-size: 13px; font-weight: bold; color: var(--text-main); margin-top:4px;">🚚 Registrar Pago de Flete</div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="flete-nombre-deuda" placeholder="Transportista" style="flex: 1; font-size:13px;">
+                        <input type="number" id="flete-monto-deuda" placeholder="Monto $" style="flex: 1;">
+                        <button class="btn-pos" style="background: #f59e0b; padding: 10px 12px;font-size:12px;" onclick="registrarPagoFleteDesdeDeuda()">PAGAR</button>
                     </div>
                 </div>
             </div>
@@ -586,15 +599,21 @@
         <div class="panel" style="flex: 1; border-top: 5px solid var(--warning);">
             <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; background: #fffbeb;">
                 <h2 style="margin: 0; color: #b45309;">📈 Historial de Ventas</h2>
-                <div style="display: flex; gap: 15px;">
-                    <select id="filtro-ventas" onchange="mostrarReporteVentas()" style="width: 250px; border-color: var(--warning);">
+                <div style="display: flex; gap: 8px; align-items:center; flex-wrap:wrap;">
+                    <select id="filtro-ventas" onchange="onFiltroVentasChange()" style="padding:8px 12px; border-color: var(--warning); font-size:13px;">
                         <option value="hoy">Hoy</option>
                         <option value="semana">Últimos 7 días</option>
                         <option value="mes">Este Mes</option>
                         <option value="año">Este Año</option>
                         <option value="todo">Histórico Completo</option>
+                        <option value="rango">📅 Rango personalizado</option>
                     </select>
-                    <button class="btn-pos" style="background: var(--warning); padding: 12px 20px; color: #78350f;" onclick="descargarReporteVentasPDF()">📄 PDF</button>
+                    <div id="ventas-rango" style="display:none; gap:6px; align-items:center; flex-wrap:wrap;">
+                        <input type="date" id="ventas-fecha-desde" onchange="mostrarReporteVentas()" style="padding:8px;font-size:13px;border:1px solid var(--warning);border-radius:6px;">
+                        <span style="color:#b45309;font-weight:700;">→</span>
+                        <input type="date" id="ventas-fecha-hasta" onchange="mostrarReporteVentas()" style="padding:8px;font-size:13px;border:1px solid var(--warning);border-radius:6px;">
+                    </div>
+                    <button class="btn-pos" style="background: var(--warning); padding: 10px 18px; color: #78350f; font-size:13px;" onclick="descargarReporteVentasPDF()">📄 PDF</button>
                 </div>
             </div>
             <div class="resumen-caja" style="margin: 15px; border-color: var(--warning); background: #fef3c7;">
@@ -779,6 +798,70 @@
 </div>
 
 
+<div id="vista-ganancia" class="main" style="display:none; flex-direction:column; overflow-y:auto; padding:18px; gap:14px; height:0;">
+
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <h2 style="margin:0; flex:1;">💰 Ganancia Real</h2>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <select id="ganancia-periodo" onchange="renderGananciaReal()" style="padding:9px 14px;font-size:13px;border-radius:8px;border:1px solid #e2e8f0;">
+                <option value="hoy">Hoy</option>
+                <option value="semana">Últimos 7 días</option>
+                <option value="mes" selected>Este Mes</option>
+                <option value="año">Este Año</option>
+                <option value="todo">Todo</option>
+            </select>
+            <button onclick="exportarGananciaPDF()" style="background:#0f172a;color:white;border:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;">📄 PDF</button>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+        <div style="background:white;border-radius:10px;border:1px solid #e2e8f0;padding:14px 16px;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Total Facturado</div>
+            <div style="font-size:22px;font-weight:800;color:#2563eb;" id="gan-facturado">$0</div>
+        </div>
+        <div style="background:white;border-radius:10px;border:1px solid #e2e8f0;padding:14px 16px;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Costo Fábrica</div>
+            <div style="font-size:22px;font-weight:800;color:#ef4444;" id="gan-costo">$0</div>
+        </div>
+        <div style="background:#d1fae5;border-radius:10px;border:1px solid #6ee7b7;padding:14px 16px;">
+            <div style="font-size:11px;font-weight:700;color:#065f46;text-transform:uppercase;">Ganancia Bruta</div>
+            <div style="font-size:22px;font-weight:800;color:#059669;" id="gan-bruta">$0</div>
+        </div>
+        <div style="background:white;border-radius:10px;border:1px solid #e2e8f0;padding:14px 16px;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;">Fletes Pagados</div>
+            <div style="font-size:22px;font-weight:800;color:#f59e0b;" id="gan-fletes">$0</div>
+        </div>
+        <div style="background:#eff6ff;border-radius:10px;border:2px solid #2563eb;padding:14px 16px;">
+            <div style="font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;">🎯 Ganancia REAL</div>
+            <div style="font-size:26px;font-weight:800;color:#1d4ed8;" id="gan-real">$0</div>
+            <div style="font-size:11px;color:#64748b;" id="gan-pct">0% del facturado</div>
+        </div>
+    </div>
+
+    <!-- Tabla detalle por venta -->
+    <div style="background:white;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
+        <div style="padding:14px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-weight:800;font-size:14px;">
+            Detalle de Ventas
+        </div>
+        <table class="tabla-reportes">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Producto</th>
+                    <th style="text-align:right;">Venta</th>
+                    <th style="text-align:right;color:#fca5a5;">Costo</th>
+                    <th style="text-align:right;color:#6ee7b7;">Ganancia</th>
+                    <th style="text-align:center;">%</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-ganancia-body"></tbody>
+        </table>
+    </div>
+</div>
+
+
 <script>
     // ================== CONFIGURACIÓN DE FIREBASE ==================
     const firebaseConfig = {
@@ -864,7 +947,7 @@
     }
 
     function cambiarPestana(pestana) {
-        ['dashboard', 'pos', 'presupuesto', 'fabrica', 'deuda', 'inventario', 'stock', 'reportes', 'ventas', 'pendientes', 'clientes', 'fletes'].forEach(p => { document.getElementById('vista-' + p).style.display = 'none'; });
+        ['dashboard', 'pos', 'presupuesto', 'fabrica', 'deuda', 'inventario', 'stock', 'reportes', 'ventas', 'pendientes', 'clientes', 'fletes', 'ganancia'].forEach(p => { document.getElementById('vista-' + p).style.display = 'none'; });
         document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active')); document.getElementById('btn-' + pestana).classList.add('active');
 
         if(pestana === 'dashboard') { document.getElementById('vista-dashboard').style.display = 'flex'; renderDashboard(); }
@@ -879,6 +962,7 @@
         else if (pestana === 'pendientes') { document.getElementById('vista-pendientes').style.display = 'flex'; mostrarPendientes(); }
         else if (pestana === 'clientes') { document.getElementById('vista-clientes').style.display = 'flex'; setTimeout(() => mostrarClientes(), 300); }
         else if (pestana === 'fletes') { document.getElementById('vista-fletes').style.display = 'flex'; mostrarFletes(); }
+        else if (pestana === 'ganancia') { document.getElementById('vista-ganancia').style.display = 'flex'; renderGananciaReal(); }
         if (document.getElementById('sidebar').classList.contains('open')) toggleMenu();
     }
 
@@ -1089,7 +1173,16 @@
     function registrarPagoManualFabrica() { const inputMonto = document.getElementById('monto-pago-manual'); const monto = parseFloat(inputMonto.value); if (isNaN(monto) || monto <= 0) return alert("❌ Ingresá un monto válido mayor a 0."); if(confirm(`¿Confirmás que realizaste un pago/transferencia a la fábrica por $${monto.toLocaleString('es-AR')}?`)) { dbFirestore.collection("ventas").add({ id: Date.now(), fecha: new Date().toISOString(), cliente: 'TRANSFERENCIA A MATRIZ', total: 0, tipo: 'pago_a_fabrica_matriz', montoPagoFabrica: monto }); inputMonto.value = ''; alert("✅ Pago registrado en la nube."); } }
     function esPedidoFabrica(v) { if (!v || !v.tipo) return false; let t = String(v.tipo).toLowerCase().replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u'); if (t.includes('pago') || t.includes('flete') || t.includes('presup')) return false; if ((t.includes('pedido') || t.includes('fabrica') || t.includes('fabri')) && !t.includes('pago')) return true; if (t === 'ticket x' || t === 'factura c') return true; return false; }
     function esPagoFabrica(v) { if (!v || !v.tipo) return false; let t = String(v.tipo).toLowerCase().replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u'); return t.includes('pago') && (t.includes('fabrica') || t.includes('fabri') || t.includes('matriz')); }
-    function mostrarDeudaFabrica() { const tbody = document.getElementById('tabla-deuda-body'); let totalDeuda = 0; let totalPagado = 0; let saldoAcumulado = 0; let filas = []; [...historialVentas].forEach(v => { let fecha = new Date(v.fecha).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'}); if (esPedidoFabrica(v)) { let costo = parseFloat(v.costoTotal); if (isNaN(costo) || costo <= 0) costo = Math.round(parseFloat(v.total || 0) * 0.73); if (isNaN(costo)) costo = 0; totalDeuda += costo; saldoAcumulado += costo; let saldadoHistorico = (v.pagadoFabrica === true || v.pagadoFabrica === "true"); if (saldadoHistorico) { totalPagado += costo; saldoAcumulado -= costo; } filas.push({fecha: v.fecha, html: `<tr><td>${fecha}</td><td><strong>📦 Pedido:</strong> ${v.cliente || 'Fábrica'}<br><span style="font-size:11px; color:var(--text-muted);">Venta al cliente: $${parseFloat(v.total||0).toLocaleString('es-AR')}</span></td><td style="text-align:right; color:var(--danger); font-weight:bold;">+$${Math.round(costo).toLocaleString('es-AR')}</td><td style="text-align:right; color:var(--text-muted);">—</td><td style="text-align:right; font-weight:bold;">$${Math.round(saldoAcumulado).toLocaleString('es-AR')}</td></tr>`}); if (saldadoHistorico) { filas.push({fecha: v.fecha, html: `<tr style="background:#f0fdf4;"><td>${fecha}</td><td style="color:var(--success);"><strong>✔️ Saldado:</strong> ${v.cliente}</td><td style="text-align:right; color:var(--text-muted);">—</td><td style="text-align:right; color:var(--success); font-weight:bold;">-$${Math.round(costo).toLocaleString('es-AR')}</td><td style="text-align:right; font-weight:bold;">$${Math.round(saldoAcumulado).toLocaleString('es-AR')}</td></tr>`}); } } else if (esPagoFabrica(v)) { let pago = parseFloat(v.montoPagoFabrica) || 0; totalPagado += pago; saldoAcumulado -= pago; filas.push({fecha: v.fecha, html: `<tr style="background:#f0fdf4;"><td>${fecha}</td><td style="color:var(--success);"><strong>💸 PAGO:</strong> ${v.cliente}</td><td style="text-align:right; color:var(--text-muted);">—</td><td style="text-align:right; color:var(--success); font-weight:bold;">-$${Math.round(pago).toLocaleString('es-AR')}</td><td style="text-align:right; font-weight:bold;">$${Math.round(saldoAcumulado).toLocaleString('es-AR')}</td></tr>`}); } }); filas.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); tbody.innerHTML = filas.map(f => f.html).join('') || `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">Sin movimientos registrados</td></tr>`; let saldoFinal = totalDeuda - totalPagado; if (isNaN(saldoFinal)) saldoFinal = 0; document.getElementById('total-deuda-fabrica').innerText = Math.abs(saldoFinal).toLocaleString('es-AR'); const cajaSaldo = document.getElementById('caja-saldo-fabrica'); const titSaldo = document.getElementById('titulo-saldo-fabrica'); const numSaldo = document.getElementById('total-deuda-fabrica'); if(saldoFinal <= 0 && (totalDeuda > 0 || totalPagado > 0)) { cajaSaldo.style.backgroundColor = '#ecfdf5'; cajaSaldo.style.borderColor = '#10b981'; titSaldo.innerHTML = '<strong>Saldo a Favor / Al Día:</strong>'; titSaldo.style.color = '#065f46'; numSaldo.style.color = '#059669'; } else if (saldoFinal <= 0 && totalDeuda === 0) { cajaSaldo.style.backgroundColor = '#f8fafc'; cajaSaldo.style.borderColor = '#cbd5e1'; titSaldo.innerHTML = '<strong>Sin movimientos registrados:</strong>'; titSaldo.style.color = '#475569'; numSaldo.style.color = '#475569'; } else { cajaSaldo.style.backgroundColor = '#fee2e2'; cajaSaldo.style.borderColor = '#ef4444'; titSaldo.innerHTML = '<strong>Total Deuda Pendiente a Pagar:</strong>'; titSaldo.style.color = '#991b1b'; numSaldo.style.color = '#b91c1c'; } }
+    function mostrarDeudaFabrica() { const tbody = document.getElementById('tabla-deuda-body'); let totalDeuda = 0; let totalPagado = 0; let saldoAcumulado = 0; let filas = [];
+        // Filtro por fechas
+        const desdeEl = document.getElementById('deuda-fecha-desde');
+        const hastaEl = document.getElementById('deuda-fecha-hasta');
+        const fDesde = desdeEl && desdeEl.value ? new Date(desdeEl.value + 'T00:00:00') : null;
+        const fHasta = hastaEl && hastaEl.value ? new Date(hastaEl.value + 'T23:59:59') : null;
+        [...historialVentas].forEach(v => {
+        const fV = new Date(v.fecha);
+        if (fDesde && fV < fDesde) return;
+        if (fHasta && fV > fHasta) return; let fecha = new Date(v.fecha).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'}); if (esPedidoFabrica(v)) { let costo = parseFloat(v.costoTotal); if (isNaN(costo) || costo <= 0) costo = Math.round(parseFloat(v.total || 0) * 0.73); if (isNaN(costo)) costo = 0; totalDeuda += costo; saldoAcumulado += costo; let saldadoHistorico = (v.pagadoFabrica === true || v.pagadoFabrica === "true"); if (saldadoHistorico) { totalPagado += costo; saldoAcumulado -= costo; } filas.push({fecha: v.fecha, html: `<tr><td>${fecha}</td><td><strong>📦 Pedido:</strong> ${v.cliente || 'Fábrica'}<br><span style="font-size:11px; color:var(--text-muted);">Venta al cliente: $${parseFloat(v.total||0).toLocaleString('es-AR')}</span></td><td style="text-align:right; color:var(--danger); font-weight:bold;">+$${Math.round(costo).toLocaleString('es-AR')}</td><td style="text-align:right; color:var(--text-muted);">—</td><td style="text-align:right; font-weight:bold;">$${Math.round(saldoAcumulado).toLocaleString('es-AR')}</td></tr>`}); if (saldadoHistorico) { filas.push({fecha: v.fecha, html: `<tr style="background:#f0fdf4;"><td>${fecha}</td><td style="color:var(--success);"><strong>✔️ Saldado:</strong> ${v.cliente}</td><td style="text-align:right; color:var(--text-muted);">—</td><td style="text-align:right; color:var(--success); font-weight:bold;">-$${Math.round(costo).toLocaleString('es-AR')}</td><td style="text-align:right; font-weight:bold;">$${Math.round(saldoAcumulado).toLocaleString('es-AR')}</td></tr>`}); } } else if (esPagoFabrica(v)) { let pago = parseFloat(v.montoPagoFabrica) || 0; totalPagado += pago; saldoAcumulado -= pago; filas.push({fecha: v.fecha, html: `<tr style="background:#f0fdf4;"><td>${fecha}</td><td style="color:var(--success);"><strong>💸 PAGO:</strong> ${v.cliente}</td><td style="text-align:right; color:var(--text-muted);">—</td><td style="text-align:right; color:var(--success); font-weight:bold;">-$${Math.round(pago).toLocaleString('es-AR')}</td><td style="text-align:right; font-weight:bold;">$${Math.round(saldoAcumulado).toLocaleString('es-AR')}</td></tr>`}); } }); filas.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)); tbody.innerHTML = filas.map(f => f.html).join('') || `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">Sin movimientos registrados</td></tr>`; let saldoFinal = totalDeuda - totalPagado; if (isNaN(saldoFinal)) saldoFinal = 0; document.getElementById('total-deuda-fabrica').innerText = Math.abs(saldoFinal).toLocaleString('es-AR'); const cajaSaldo = document.getElementById('caja-saldo-fabrica'); const titSaldo = document.getElementById('titulo-saldo-fabrica'); const numSaldo = document.getElementById('total-deuda-fabrica'); if(saldoFinal <= 0 && (totalDeuda > 0 || totalPagado > 0)) { cajaSaldo.style.backgroundColor = '#ecfdf5'; cajaSaldo.style.borderColor = '#10b981'; titSaldo.innerHTML = '<strong>Saldo a Favor / Al Día:</strong>'; titSaldo.style.color = '#065f46'; numSaldo.style.color = '#059669'; } else if (saldoFinal <= 0 && totalDeuda === 0) { cajaSaldo.style.backgroundColor = '#f8fafc'; cajaSaldo.style.borderColor = '#cbd5e1'; titSaldo.innerHTML = '<strong>Sin movimientos registrados:</strong>'; titSaldo.style.color = '#475569'; numSaldo.style.color = '#475569'; } else { cajaSaldo.style.backgroundColor = '#fee2e2'; cajaSaldo.style.borderColor = '#ef4444'; titSaldo.innerHTML = '<strong>Total Deuda Pendiente a Pagar:</strong>'; titSaldo.style.color = '#991b1b'; numSaldo.style.color = '#b91c1c'; } }
 
     // ================== VISTAS STOCK Y REPORTES ==================
     function filtrarStock() { const val = document.getElementById('bus-stock').value.toLowerCase(); document.getElementById('lista-stock').innerHTML = db.map((i, idx) => { if (i.n.toLowerCase().includes(val) || (i.c && i.c.toLowerCase().includes(val))) { return `<div class="list-card"><div><div style="font-weight:800;">${i.n}</div><div style="font-size:13px; color:var(--text-muted);">${i.c || ''}</div><div style="margin-top:5px; font-size:12px; font-weight:bold; color:${i.s<0?'var(--danger)':'var(--success)'}">Stock Actual: ${i.s}</div></div><div style="display:flex; gap:10px;"><input type="number" id="qty-${idx}" placeholder="Cant." style="width:80px; text-align:center;"><button class="btn-ingresar" onclick="sumarStock(${idx})">Sumar</button></div></div>`; } return ''; }).join(''); }
@@ -1099,12 +1192,21 @@
     function descargarReporteStockPDF() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); const f = document.getElementById('filtro-reporte').value; let dPDF = db.filter(i => { if (f === 'negativos') return i.s < 0; if (f === 'positivos') return i.s > 0; return true; }); doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text("REPORTE DE INVENTARIO - LECATEX EXPRESS", 15, 20); doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(`Fecha: ${new Date().toLocaleString('es-AR')}`, 15, 26); doc.autoTable({ startY: 32, head: [['Categoría', 'Detalle', 'Precio Costo', 'Precio Público', 'Stock']], body: dPDF.map(i => [i.n, i.c || '-', `$${(parseFloat(i.pc)||0).toLocaleString('es-AR')}`, `$${parseFloat(i.p).toLocaleString('es-AR')}`, i.s.toString()]), theme: 'grid', headStyles: { fillColor: [51, 65, 85] }, columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'center', fontStyle: 'bold' } }, didParseCell: function(data) { if (data.section === 'body' && data.column.index === 4) { let s = parseInt(data.cell.raw); if (s < 0) data.cell.styles.textColor = [239, 68, 68]; else if (s > 0) data.cell.styles.textColor = [16, 185, 129]; } } }); doc.save(`Inventario_${f}.pdf`); }
     function obtenerFechaInicio(filtro) { const hoy = new Date(); hoy.setHours(0,0,0,0); if (filtro === 'hoy') return hoy; if (filtro === 'semana') return new Date(hoy.setDate(hoy.getDate() - 7)); if (filtro === 'mes') return new Date(new Date().getFullYear(), new Date().getMonth(), 1); if (filtro === 'año') return new Date(new Date().getFullYear(), 0, 1); return new Date(2000, 0, 1); }
     function mostrarReporteVentas() {
-        const fInicio = obtenerFechaInicio(document.getElementById('filtro-ventas').value);
+        const filtroVal = document.getElementById('filtro-ventas').value;
+        let fInicio, fFin = null;
+        if (filtroVal === 'rango') {
+            const desdeEl = document.getElementById('ventas-fecha-desde');
+            const hastaEl = document.getElementById('ventas-fecha-hasta');
+            fInicio = desdeEl && desdeEl.value ? new Date(desdeEl.value + 'T00:00:00') : new Date(2000,0,1);
+            fFin    = hastaEl && hastaEl.value ? new Date(hastaEl.value + 'T23:59:59') : null;
+        } else {
+            fInicio = obtenerFechaInicio(filtroVal);
+        }
         let html = ''; let sT = 0;
         [...historialVentas].reverse().forEach((v, idx) => {
             let fVenta = new Date(v.fecha);
             let tipo = String(v.tipo).toLowerCase();
-            if (fVenta >= fInicio && !tipo.includes('pago')) {
+            if (fVenta >= fInicio && (!fFin || fVenta <= fFin) && !tipo.includes('pago')) {
                 sT += parseFloat(v.total) || 0;
                 let cC = (v.tipo === 'Factura C' || v.tipo === 'Ticket X') ? 'var(--success)' : (tipo.includes('brica') ? 'var(--purple)' : 'var(--text-muted)');
                 let ab = v.abonado !== undefined ? parseFloat(v.abonado) : parseFloat(v.total);
@@ -2895,6 +2997,200 @@ Villa Ballester, Buenos Aires`;
             columnStyles: {3:{halign:'right',fontStyle:'bold',textColor:[185,28,28]}}
         });
         doc.save("Fletes_" + fecha.replace(/\//g,'-') + ".pdf");
+    }
+
+
+    // ══════════════════════════════════════════════
+    //  FILTRO FECHAS EN DEUDA FÁBRICA
+    // ══════════════════════════════════════════════
+    function limpiarFiltroDeuda() {
+        const d = document.getElementById('deuda-fecha-desde');
+        const h = document.getElementById('deuda-fecha-hasta');
+        if(d) d.value = '';
+        if(h) h.value = '';
+        mostrarDeudaFabrica();
+    }
+
+    // ══════════════════════════════════════════════
+    //  PAGO DE FLETE DESDE CUENTA CTE FÁBRICA
+    // ══════════════════════════════════════════════
+    function registrarPagoFleteDesdeDeuda() {
+        const nombre = (document.getElementById('flete-nombre-deuda').value || '').trim();
+        const monto  = parseFloat(document.getElementById('flete-monto-deuda').value);
+        if (!nombre) return alert('❌ Ingresá el nombre del transportista.');
+        if (!monto || monto <= 0) return alert('❌ Ingresá un monto válido.');
+        if (!confirm('¿Registrar pago de flete a ' + nombre + ' por $' + Math.round(monto).toLocaleString('es-AR') + '?')) return;
+        dbFirestore.collection('ventas').add({
+            id: Date.now(), fecha: new Date().toISOString(),
+            cliente: nombre, total: 0, pago: 'Efectivo',
+            tipo: 'pago_flete', abonado: 0, restante: 0,
+            costoTotal: 0, pagadoFabrica: false,
+            montoPagoFlete: Math.round(monto), obs: 'Pago desde Cta. Cte.', items: []
+        }).then(() => {
+            alert('✅ Pago de flete registrado: $' + Math.round(monto).toLocaleString('es-AR') + ' a ' + nombre);
+            document.getElementById('flete-nombre-deuda').value = '';
+            document.getElementById('flete-monto-deuda').value = '';
+            mostrarDeudaFabrica();
+        }).catch(e => alert('❌ Error: ' + e.message));
+    }
+
+    // ══════════════════════════════════════════════
+    //  FILTRO RANGO EN HISTORIAL DE VENTAS
+    // ══════════════════════════════════════════════
+    function onFiltroVentasChange() {
+        const val = document.getElementById('filtro-ventas').value;
+        const rango = document.getElementById('ventas-rango');
+        if (rango) rango.style.display = val === 'rango' ? 'flex' : 'none';
+        mostrarReporteVentas();
+    }
+
+    // ══════════════════════════════════════════════
+    //  GANANCIA REAL
+    // ══════════════════════════════════════════════
+    function gananciaFechaInicio(periodo) {
+        const hoy = new Date(); hoy.setHours(0,0,0,0);
+        if (periodo === 'hoy') return hoy;
+        if (periodo === 'semana') { const d = new Date(hoy); d.setDate(d.getDate()-7); return d; }
+        if (periodo === 'mes') return new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        if (periodo === 'año') return new Date(hoy.getFullYear(), 0, 1);
+        return new Date(2000, 0, 1);
+    }
+
+    function renderGananciaReal() {
+        const periodo = document.getElementById('ganancia-periodo') ? document.getElementById('ganancia-periodo').value : 'mes';
+        const fInicio = gananciaFechaInicio(periodo);
+
+        // Filtrar ventas reales (no pagos)
+        const ventas = historialVentas.filter(v => {
+            const t = String(v.tipo||'').toLowerCase();
+            return !t.includes('pago') && !t.includes('flete') && new Date(v.fecha) >= fInicio;
+        });
+
+        let totalFacturado = 0, totalCosto = 0;
+        const filas = [];
+
+        ventas.forEach(v => {
+            const venta = parseFloat(v.total||0);
+            let costo = parseFloat(v.costoTotal||0);
+            if (isNaN(costo) || costo <= 0) costo = Math.round(venta * 0.73);
+            const ganancia = venta - costo;
+            const pct = venta > 0 ? Math.round((ganancia/venta)*100) : 0;
+            totalFacturado += venta;
+            totalCosto += costo;
+
+            // Obtener nombre del producto desde items
+            let producto = '—';
+            if (v.items && v.items.length > 0) {
+                producto = v.items.map(i => i.n + (i.c ? ' - ' + i.c : '') + (i.cant > 1 ? ' x' + i.cant : '')).join(', ');
+            }
+
+            filas.push({
+                fecha: v.fecha,
+                cliente: v.cliente || '—',
+                producto,
+                venta, costo, ganancia, pct
+            });
+        });
+
+        // Fletes del período
+        const fletes = historialVentas.filter(v => {
+            const t = String(v.tipo||'').toLowerCase();
+            return t.includes('flete') && new Date(v.fecha) >= fInicio;
+        });
+        const totalFletes = fletes.reduce((s,v) => s + parseFloat(v.montoPagoFlete||0), 0);
+
+        const ganBruta = totalFacturado - totalCosto;
+        const ganReal  = ganBruta - totalFletes;
+        const pctReal  = totalFacturado > 0 ? Math.round((ganReal/totalFacturado)*100) : 0;
+
+        // Actualizar KPIs
+        const el = id => document.getElementById(id);
+        if(el('gan-facturado')) el('gan-facturado').innerText = '$' + Math.round(totalFacturado).toLocaleString('es-AR');
+        if(el('gan-costo'))     el('gan-costo').innerText     = '$' + Math.round(totalCosto).toLocaleString('es-AR');
+        if(el('gan-bruta'))     el('gan-bruta').innerText     = '$' + Math.round(ganBruta).toLocaleString('es-AR');
+        if(el('gan-fletes'))    el('gan-fletes').innerText    = '$' + Math.round(totalFletes).toLocaleString('es-AR');
+        if(el('gan-real'))      el('gan-real').innerText      = '$' + Math.round(ganReal).toLocaleString('es-AR');
+        if(el('gan-pct'))       el('gan-pct').innerText       = pctReal + '% del facturado' + (totalFletes > 0 ? ' (incluye -$' + Math.round(totalFletes).toLocaleString('es-AR') + ' fletes)' : '');
+
+        // Tabla detalle
+        const tbody = el('tabla-ganancia-body');
+        if (!tbody) return;
+        if (filas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">Sin ventas en este período.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = filas.sort((a,b) => new Date(b.fecha)-new Date(a.fecha)).map(f => {
+            const color = f.ganancia > 0 ? '#059669' : '#ef4444';
+            return `<tr>
+                <td style="font-size:12px;">${new Date(f.fecha).toLocaleDateString('es-AR')}</td>
+                <td><strong>${f.cliente}</strong></td>
+                <td style="font-size:12px;color:#64748b;">${f.producto}</td>
+                <td style="text-align:right;font-weight:700;">$${Math.round(f.venta).toLocaleString('es-AR')}</td>
+                <td style="text-align:right;color:#ef4444;">$${Math.round(f.costo).toLocaleString('es-AR')}</td>
+                <td style="text-align:right;font-weight:800;color:${color};">$${Math.round(f.ganancia).toLocaleString('es-AR')}</td>
+                <td style="text-align:center;"><span style="background:${f.pct>=20?'#d1fae5':f.pct>0?'#fef3c7':'#fee2e2'};color:${f.pct>=20?'#065f46':f.pct>0?'#92400e':'#991b1b'};font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;">${f.pct}%</span></td>
+            </tr>`;
+        }).join('');
+    }
+
+    function exportarGananciaPDF() {
+        const periodo = document.getElementById('ganancia-periodo') ? document.getElementById('ganancia-periodo').value : 'mes';
+        const fInicio = gananciaFechaInicio(periodo);
+        const ventas = historialVentas.filter(v => {
+            const t = String(v.tipo||'').toLowerCase();
+            return !t.includes('pago') && !t.includes('flete') && new Date(v.fecha) >= fInicio;
+        });
+        if (ventas.length === 0) return alert('Sin ventas para exportar.');
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const fecha = new Date().toLocaleDateString('es-AR');
+        let totalF = 0, totalC = 0;
+        const rows = ventas.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(v => {
+            const venta = parseFloat(v.total||0);
+            let costo = parseFloat(v.costoTotal||0);
+            if (isNaN(costo)||costo<=0) costo = Math.round(venta*0.73);
+            const gan = venta - costo;
+            const pct = venta > 0 ? Math.round((gan/venta)*100) : 0;
+            totalF += venta; totalC += costo;
+            let prod = v.items&&v.items.length>0 ? v.items[0].n+(v.items[0].c?' - '+v.items[0].c:'') : '—';
+            return [new Date(v.fecha).toLocaleDateString('es-AR'), v.cliente||'—', prod,
+                    '$'+Math.round(venta).toLocaleString('es-AR'),
+                    '$'+Math.round(costo).toLocaleString('es-AR'),
+                    '$'+Math.round(gan).toLocaleString('es-AR'),
+                    pct+'%'];
+        });
+        const ganBruta = totalF - totalC;
+        const fletes = historialVentas.filter(v=>String(v.tipo||'').toLowerCase().includes('flete')&&new Date(v.fecha)>=fInicio).reduce((s,v)=>s+parseFloat(v.montoPagoFlete||0),0);
+        const ganReal = ganBruta - fletes;
+
+        doc.setFillColor(15,23,42); doc.rect(0,0,210,32,'F');
+        doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(255,255,255);
+        doc.text("GANANCIA REAL — LECATEX EXPRESS", 105, 14, {align:"center"});
+        doc.setFontSize(9); doc.setFont("helvetica","normal");
+        doc.text(fecha + " | Período: " + periodo, 105, 22, {align:"center"});
+        doc.setTextColor(0,0,0);
+
+        doc.setFillColor(239,246,255); doc.rect(10,36,190,26,'F');
+        doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(30,64,175);
+        doc.text("Facturado: $"+Math.round(totalF).toLocaleString('es-AR'), 15, 44);
+        doc.setTextColor(185,28,28); doc.text("Costo: $"+Math.round(totalC).toLocaleString('es-AR'), 75, 44);
+        doc.setTextColor(5,150,105); doc.text("Gan. Bruta: $"+Math.round(ganBruta).toLocaleString('es-AR'), 135, 44);
+        if(fletes>0){doc.setTextColor(245,158,11);doc.text("Fletes: -$"+Math.round(fletes).toLocaleString('es-AR'),15,54);}
+        doc.setTextColor(29,78,216); doc.setFontSize(11);
+        doc.text("GANANCIA REAL: $"+Math.round(ganReal).toLocaleString('es-AR'), fletes>0?75:15, 54);
+        doc.setTextColor(0,0,0);
+
+        doc.autoTable({
+            startY: 68,
+            head: [['Fecha','Cliente','Producto','Venta','Costo','Ganancia','%']],
+            body: rows,
+            theme: 'grid',
+            headStyles: {fillColor:[15,23,42],textColor:255,fontSize:8},
+            bodyStyles: {fontSize:8},
+            columnStyles: {3:{halign:'right'},4:{halign:'right'},5:{halign:'right',fontStyle:'bold'},6:{halign:'center'}}
+        });
+        doc.save("GananciaReal_"+fecha.replace(/\//g,'-')+".pdf");
     }
 
 </script>
