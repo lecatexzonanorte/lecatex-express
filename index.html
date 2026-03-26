@@ -36,7 +36,7 @@
             --border: #e2e8f0; --text-main: #0f172a; --text-muted: #64748b;
         }
 
-        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-main); height: 100vh; overflow: hidden; color: var(--text-main); display: flex; flex-direction: column; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-main); height: 100vh; overflow: hidden; color: var(--text-main); }
         
         /* === PANTALLA DE LOGIN === */
         #login-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--darker); z-index: 10000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
@@ -49,9 +49,9 @@
         .btn-login:hover { background: var(--primary-hover); }
 
         /* Contenedor de la app (oculto por defecto) */
-        #app-content { display: none; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; }
+        #app-content { display: none; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; position: fixed; top: 0; left: 0; }
 
-        header { background: var(--darker); color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; z-index: 10; border-bottom: 1px solid #1e293b; }
+        header { background: var(--darker); color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; z-index: 10; border-bottom: 1px solid #1e293b; flex-shrink: 0; }
         .header-left { display: flex; align-items: center; gap: 15px; }
         .btn-hamburguesa { background: transparent; color: white; border: none; font-size: 26px; cursor: pointer; padding: 0 10px 0 0; transition: 0.2s; display: flex; align-items: center;}
         .btn-hamburguesa:hover { color: var(--primary); }
@@ -74,7 +74,7 @@
         .btn-logout { margin-top: auto; border-left: 4px solid var(--danger); color: #fca5a5; }
         .btn-logout:hover { background: rgba(239, 68, 68, 0.1); color: white; }
 
-        .main { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; min-height: 0; height: 0; }
+        .main { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; min-height: 0; }
         .panel { background: var(--bg-panel); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); }
         .panel-header { padding: 15px 20px; border-bottom: 1px solid var(--border); background: #f8fafc; }
         .panel-header h3, .panel-header h2 { margin: 0; font-size: 18px; color: var(--text-main); }
