@@ -2,238 +2,898 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Lecatex POS">
-    <meta name="theme-color" content="#020617">
-    
-    <title>Lecatex Express - POS Seguro</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presupuesto Lecatex</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-
     <style>
-        .pos-card { transition: all 0.2s; border: 1px solid #1e293b; }
-        .pos-card:active { transform: scale(0.95); background: #1e293b; }
-        .sidebar-item { cursor: pointer; transition: 0.2s; border-left: 4px solid transparent; }
-        .sidebar-item:hover { background: #1e293b; }
-        .sidebar-active { background: #1e293b; border-left-color: #3b82f6; color: white; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .calculator-card {
+            background-color: #1e1e1e;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            width: 100%;
+            max-width: 520px;
+            border: 1px solid #333;
+            margin: 20px;
+        }
+        h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #e0e0e0;
+            font-size: 22px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .row-inputs {
+            display: flex;
+            gap: 10px;
+        }
+        .row-inputs > div {
+            flex: 1;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #aaa;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background-color: #2a2a2a;
+            color: #fff;
+            font-size: 15px;
+            box-sizing: border-box;
+            outline: none;
+        }
+        input:focus, select:focus {
+            border-color: #888;
+        }
+        .section-title {
+            font-size: 14px;
+            color: #ff9800;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+        .result-box {
+            margin-top: 25px;
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #4caf50;
+        }
+        .result-breakdown {
+            font-size: 15px;
+            color: #ccc;
+            margin-bottom: 15px;
+            line-height: 1.5;
+            text-align: left;
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .costo-total {
+            color: #4caf50;
+            font-size: 38px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .btn-pdf {
+            width: 100%;
+            background-color: #1976D2;
+            color: white;
+            font-weight: bold;
+            padding: 15px;
+            margin-top: 15px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            text-transform: uppercase;
+            font-size: 15px;
+            transition: background-color 0.3s;
+        }
+        .btn-pdf:hover {
+            background-color: #1565C0;
+        }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30">
+<body>
 
-    <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center p-6">
-        <div class="w-full max-w-md bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-2xl text-center">
-            <h1 class="text-2xl font-black text-white mb-6 uppercase tracking-tighter">Lecatex <span class="text-blue-500">POS</span></h1>
-            <input type="password" id="admin-pass" placeholder="Contraseña" class="w-full bg-slate-800 border border-slate-700 p-4 rounded-xl text-center text-2xl mb-4 focus:outline-none focus:border-blue-500 text-white">
-            <button onclick="checkLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all">INGRESAR</button>
+<div class="calculator-card">
+    <h2>Presupuestador Express</h2>
+    
+    <div class="input-group">
+        <label for="cliente">Cliente / Obra (Opcional)</label>
+        <input type="text" id="cliente" placeholder="Ej: Villa Ballester">
+    </div>
+
+    <!-- ZONA 1 -->
+    <div class="section-title" style="color:#4fc3f7; margin-top:5px;">🎨 Zona 1</div>
+
+    <div class="input-group">
+        <label for="metros">Metros a cubrir — Zona 1 (m² o ml)</label>
+        <input type="text" inputmode="decimal" id="metros" placeholder="Ej: 33" oninput="calcular()">
+    </div>
+
+    <div class="input-group">
+        <label for="cat_producto">1. Seleccionar Producto</label>
+        <select id="cat_producto" onchange="cargarPresentaciones()"></select>
+    </div>
+
+    <div class="input-group">
+        <label for="cat_presentacion">2. Presentación (Kilos/Litros)</label>
+        <select id="cat_presentacion" onchange="cargarColores()"></select>
+    </div>
+
+    <div class="input-group">
+        <label for="cat_color">3. Color / Variante</label>
+        <select id="cat_color" onchange="actualizarPrecioManual()"></select>
+    </div>
+
+    <div class="input-group">
+        <label for="precio">Precio Unitario ($) — Zona 1</label>
+        <input type="number" inputmode="numeric" id="precio" oninput="calcular()">
+    </div>
+
+    <div class="input-group" id="panel-precio15" style="display:none;">
+        <label for="precio15">Precio Balde 15 kg ($) — Zona 1 <span style="color:#ff9800; font-size:11px;">(complemento automático)</span></label>
+        <input type="number" inputmode="numeric" id="precio15" oninput="calcular()">
+    </div>
+
+    <div id="panel-base">
+        <div class="section-title">Fondo Base — Zona 1</div>
+        <div style="font-size:12px; color:#888; margin-bottom:10px;">Ingresá manualmente la cantidad y precio de cada envase que corresponda.</div>
+        <div style="display:flex; gap:6px; font-size:11px; color:#aaa; margin-bottom:4px; padding:0 2px;">
+            <span style="flex:2">Presentación</span>
+            <span style="flex:1; text-align:center;">Cant.</span>
+            <span style="flex:2; text-align:right;">Precio unit. ($)</span>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px;">
+            <label style="flex:2; margin:0; font-size:13px; color:#ccc;">20 Lts</label>
+            <input type="number" inputmode="numeric" id="cant_base20" value="0" min="0" style="flex:1; padding:8px; font-size:14px; text-align:center;" oninput="calcular()">
+            <input type="number" inputmode="numeric" id="precio_base20" value="0" min="0" style="flex:2; padding:8px; font-size:14px;" oninput="calcular()">
+        </div>
+        <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px;">
+            <label style="flex:2; margin:0; font-size:13px; color:#ccc;">10 Lts</label>
+            <input type="number" inputmode="numeric" id="cant_base10" value="0" min="0" style="flex:1; padding:8px; font-size:14px; text-align:center;" oninput="calcular()">
+            <input type="number" inputmode="numeric" id="precio_base10" value="0" min="0" style="flex:2; padding:8px; font-size:14px;" oninput="calcular()">
+        </div>
+        <div style="display:flex; gap:6px; align-items:center; margin-bottom:4px;">
+            <label style="flex:2; margin:0; font-size:13px; color:#ccc;">4 Lts</label>
+            <input type="number" inputmode="numeric" id="cant_base4" value="0" min="0" style="flex:1; padding:8px; font-size:14px; text-align:center;" oninput="calcular()">
+            <input type="number" inputmode="numeric" id="precio_base4" value="0" min="0" style="flex:2; padding:8px; font-size:14px;" oninput="calcular()">
         </div>
     </div>
 
-    <div id="main-app" class="hidden flex h-screen overflow-hidden">
-        
-        <aside class="w-20 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col">
-            <div class="p-6 border-b border-slate-800 font-black text-xl text-blue-500">LX</div>
-            <nav class="flex-1 overflow-y-auto p-2 space-y-1">
-                <div onclick="mostrarSeccion('seccion-pos')" class="sidebar-item p-3 rounded-lg flex items-center gap-4"><i class="fas fa-th"></i><span class="hidden md:block">POS</span></div>
-                <div onclick="mostrarSeccion('seccion-ventas')" class="sidebar-item p-3 rounded-lg flex items-center gap-4"><i class="fas fa-history"></i><span class="hidden md:block">Ventas</span></div>
-                <div onclick="mostrarSeccion('seccion-ganancia-real')" class="sidebar-item p-3 rounded-lg flex items-center gap-4 text-green-400 font-bold"><i class="fas fa-chart-line"></i><span class="hidden md:block">Ganancia Real</span></div>
-                <div onclick="mostrarSeccion('seccion-fabrica')" class="sidebar-item p-3 rounded-lg flex items-center gap-4"><i class="fas fa-industry"></i><span class="hidden md:block">Cta. Cte. Fábrica</span></div>
-                <div onclick="mostrarSeccion('seccion-stock')" class="sidebar-item p-3 rounded-lg flex items-center gap-4"><i class="fas fa-boxes"></i><span class="hidden md:block">Stock</span></div>
-                <div onclick="mostrarSeccion('seccion-clientes')" class="sidebar-item p-3 rounded-lg flex items-center gap-4"><i class="fas fa-users"></i><span class="hidden md:block">Clientes</span></div>
-                <div onclick="mostrarSeccion('seccion-calculadora')" class="sidebar-item p-3 rounded-lg flex items-center gap-4 text-orange-400"><i class="fas fa-calculator"></i><span class="hidden md:block font-bold">Calculadora</span></div>
-            </nav>
-        </aside>
-
-        <main class="flex-1 overflow-hidden relative flex flex-col">
-            
-            <section id="seccion-ganancia-real" class="hidden h-full flex flex-col p-4 md:p-8 overflow-y-auto">
-                <h2 class="text-3xl font-black text-white mb-2">Ganancia Real</h2>
-                <p class="text-slate-400 text-sm mb-6">Diferencia neta entre Precio de Venta y Costo de Reposición.</p>
-
-                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 mb-6 shadow-xl">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Desde</label>
-                            <input type="date" id="ganancia-fecha-inicio" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Hasta</label>
-                            <input type="date" id="ganancia-fecha-fin" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-white">
-                        </div>
-                        <button onclick="calcularGananciaRealDetallada()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-green-900/20">
-                            CALCULAR RENTABILIDAD
-                        </button>
-                    </div>
-                </div>
-
-                <div id="resultado-ganancia" class="space-y-4 pb-10">
-                    <div class="text-center p-10 text-slate-600 border border-dashed border-slate-800 rounded-2xl">
-                        Selecciona un rango de fechas para ver el desglose.
-                    </div>
-                </div>
-            </section>
-
-            <section id="seccion-ventas" class="hidden h-full flex flex-col p-4 md:p-8 overflow-y-auto">
-                <h2 class="text-3xl font-black text-white mb-6">Historial de Ventas</h2>
-                <div class="flex flex-col md:flex-row gap-2 mb-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
-                    <input type="date" id="filtro-ventas-desde" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
-                    <input type="date" id="filtro-ventas-hasta" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
-                    <button onclick="filtrarVentasPorFecha()" class="bg-blue-600 px-8 py-3 rounded-xl font-bold">BUSCAR</button>
-                </div>
-                <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-800 text-slate-400 text-xs uppercase">
-                            <tr><th class="p-4">ID/Fecha</th><th class="p-4">Cliente</th><th class="p-4">Total</th><th class="p-4">Acción</th></tr>
-                        </thead>
-                        <tbody id="lista-ventas"></tbody>
-                    </table>
-                </div>
-            </section>
-
-            <section id="seccion-fabrica" class="hidden h-full flex flex-col p-4 md:p-8 overflow-y-auto">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-3xl font-black text-white">Cta. Cte. Fábrica</h2>
-                    <div class="flex gap-2">
-                        <button onclick="abrirModalPagoFlete()" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2">
-                            <i class="fas fa-truck"></i> PAGO FLETES
-                        </button>
-                        <button onclick="abrirModalPagoFabrica()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2">
-                            <i class="fas fa-plus"></i> REGISTRAR PAGO
-                        </button>
-                    </div>
-                </div>
-                <div class="flex flex-col md:flex-row gap-2 mb-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
-                    <input type="date" id="filtro-fabrica-desde" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
-                    <input type="date" id="filtro-fabrica-hasta" class="bg-slate-800 border border-slate-700 p-3 rounded-xl flex-1 text-white">
-                    <button onclick="filtrarPagosFabrica()" class="bg-slate-700 px-8 py-3 rounded-xl font-bold">FILTRAR</button>
-                </div>
-                <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-800 text-slate-400 text-xs uppercase">
-                            <tr><th class="p-4">Fecha</th><th class="p-4">Tipo/Desc</th><th class="p-4">Monto</th></tr>
-                        </thead>
-                        <tbody id="lista-pagos-fabrica"></tbody>
-                    </table>
-                </div>
-            </section>
-
-            <section id="seccion-pos" class="hidden h-full"> </section>
-            <section id="seccion-stock" class="hidden h-full"> </section>
-            <section id="seccion-clientes" class="hidden h-full"> </section>
-            <section id="seccion-calculadora" class="hidden h-full"> </section>
-
-        </main>
+    <!-- ZONA 2 - Toggle -->
+    <div style="margin-top:20px; margin-bottom:10px;">
+        <button type="button" id="btn-zona2" onclick="toggleZona2()" style="
+            background: #2a2a2a;
+            color: #ff9800;
+            border: 1px dashed #ff9800;
+            border-radius: 6px;
+            padding: 10px 16px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        ">➕ Agregar Segunda Zona / Segundo Color</button>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    <div id="zona2-panel" style="display:none; border:1px solid #333; border-radius:8px; padding:15px; background:#1a1a1a; margin-bottom:5px;">
+        <div class="section-title" style="color:#ce93d8; margin-top:0;">🎨 Zona 2</div>
 
-        // CONFIGURE TU FIREBASE AQUÍ
-        const firebaseConfig = { /* Pegue sus credenciales aquí */ };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        <div class="input-group">
+            <label for="metros2">Metros a cubrir — Zona 2 (m² o ml)</label>
+            <input type="text" inputmode="decimal" id="metros2" placeholder="Ej: 15" oninput="calcular()">
+        </div>
 
-        window.db = db; // Global para acceso desde funciones simples
+        <div class="input-group">
+            <label for="cat_producto2">1. Seleccionar Producto — Zona 2</label>
+            <select id="cat_producto2" onchange="cargarPresentaciones2()"></select>
+        </div>
 
-        // NAVEGACION
-        window.mostrarSeccion = function(id) {
-            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-        };
+        <div class="input-group">
+            <label for="cat_presentacion2">2. Presentación (Kilos/Litros) — Zona 2</label>
+            <select id="cat_presentacion2" onchange="cargarColores2()"></select>
+        </div>
 
-        // LOGIN SIMPLE
-        window.checkLogin = function() {
-            if(document.getElementById('admin-pass').value === "1234") { // Cambie su clave
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('main-app').classList.remove('hidden');
-                mostrarSeccion('seccion-pos');
-            }
-        };
+        <div class="input-group">
+            <label for="cat_color2">3. Color / Variante — Zona 2</label>
+            <select id="cat_color2" onchange="actualizarPrecioManual2()"></select>
+        </div>
 
-        // LÓGICA GANANCIA REAL DETALLADA
-        window.calcularGananciaRealDetallada = async function() {
-            const desde = document.getElementById('ganancia-fecha-inicio').value;
-            const hasta = document.getElementById('ganancia-fecha-fin').value;
-            const contenedor = document.getElementById('resultado-ganancia');
-            
-            if(!desde || !hasta) return alert("Seleccione fechas");
+        <div class="input-group">
+            <label for="precio2">Precio Unitario ($) — Zona 2</label>
+            <input type="number" inputmode="numeric" id="precio2" oninput="calcular()">
+        </div>
 
-            contenedor.innerHTML = '<p class="text-center p-10">Calculando ganancia...</p>';
-            
-            const ventasSnap = await getDocs(collection(db, "ventas"));
-            let totalG = 0;
-            let cardsHTML = '';
+        <div class="input-group" id="panel-precio15-2" style="display:none;">
+            <label for="precio15_2">Precio Balde 15 kg ($) — Zona 2 <span style="color:#ff9800; font-size:11px;">(complemento automático)</span></label>
+            <input type="number" inputmode="numeric" id="precio15_2" oninput="calcular()">
+        </div>
 
-            ventasSnap.forEach(docV => {
-                const venta = docV.data();
-                if(venta.fecha >= desde && venta.fecha <= hasta) {
-                    venta.productos.forEach(p => {
-                        const precio = p.precio || 0;
-                        const costo = p.costo || 0;
-                        const cant = p.cantidad || 1;
-                        const ganUnit = precio - costo;
-                        const ganTot = ganUnit * cant;
-                        totalG += ganTot;
+        <div id="panel-base2">
+            <div class="section-title" style="margin-top:10px;">Fondo Base — Zona 2</div>
+            <div style="font-size:12px; color:#888; margin-bottom:10px;">Ingresá manualmente la cantidad y precio de cada envase que corresponda.</div>
+            <div style="display:flex; gap:6px; font-size:11px; color:#aaa; margin-bottom:4px; padding:0 2px;">
+                <span style="flex:2">Presentación</span>
+                <span style="flex:1; text-align:center;">Cant.</span>
+                <span style="flex:2; text-align:right;">Precio unit. ($)</span>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px;">
+                <label style="flex:2; margin:0; font-size:13px; color:#ccc;">20 Lts</label>
+                <input type="number" inputmode="numeric" id="cant_base20_2" value="0" min="0" style="flex:1; padding:8px; font-size:14px; text-align:center;" oninput="calcular()">
+                <input type="number" inputmode="numeric" id="precio_base20_2" value="0" min="0" style="flex:2; padding:8px; font-size:14px;" oninput="calcular()">
+            </div>
+            <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px;">
+                <label style="flex:2; margin:0; font-size:13px; color:#ccc;">10 Lts</label>
+                <input type="number" inputmode="numeric" id="cant_base10_2" value="0" min="0" style="flex:1; padding:8px; font-size:14px; text-align:center;" oninput="calcular()">
+                <input type="number" inputmode="numeric" id="precio_base10_2" value="0" min="0" style="flex:2; padding:8px; font-size:14px;" oninput="calcular()">
+            </div>
+            <div style="display:flex; gap:6px; align-items:center; margin-bottom:4px;">
+                <label style="flex:2; margin:0; font-size:13px; color:#ccc;">4 Lts</label>
+                <input type="number" inputmode="numeric" id="cant_base4_2" value="0" min="0" style="flex:1; padding:8px; font-size:14px; text-align:center;" oninput="calcular()">
+                <input type="number" inputmode="numeric" id="precio_base4_2" value="0" min="0" style="flex:2; padding:8px; font-size:14px;" oninput="calcular()">
+            </div>
+        </div>
+    </div>
 
-                        cardsHTML += `
-                            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex justify-between items-center border-l-4 border-l-green-500 shadow-lg">
-                                <div>
-                                    <h4 class="font-black text-white uppercase text-lg">${p.nombre}</h4>
-                                    <p class="text-xs text-slate-500">Costo: $${costo.toLocaleString()} | Venta: $${precio.toLocaleString()} | Cant: ${cant}</p>
-                                    <p class="text-[10px] text-slate-600 mt-1 italic">${venta.fecha} - Ref: ${docV.id.substring(0,6)}</p>
-                                </div>
-                                <div class="text-right">
-                                    <span class="text-xs text-slate-500 block uppercase font-bold tracking-widest">Ganancia</span>
-                                    <span class="text-2xl font-black text-green-400">+$${ganTot.toLocaleString()}</span>
-                                </div>
-                            </div>`;
-                    });
+    <div class="result-box">
+        <div class="result-breakdown" id="desglose_materiales">
+            Ingresá los metros para ver el desglose.
+        </div>
+        <div style="font-size: 14px; color: #aaa; text-transform: uppercase;">Costo Total Final</div>
+        <div class="costo-total" id="resultado_costo">$ 0</div>
+    </div>
+
+    <button class="btn-pdf" onclick="generarPDF()">📥 Descargar Presupuesto (PDF)</button>
+</div>
+
+<script>
+    // Lista centralizada con la nueva paleta enorme de colores
+    const coloresRevestimiento = [
+        "Andes", "Gris metal", "Negro", "Plomo", "Marmolado", "Napoleon", "Inca", "Carrara", "Limon", "Blanco",
+        "Natural", "Marfil", "Blanco tiza", "Blanco Hueso", "Espiga", "Desierto", "Arena", "Arena India",
+        "Sesamo", "Crema Expresso", "Ayrton", "Kalua", "Sombrero", "Mosquetero", "Botas", "Quiger",
+        "Hojas Otoñales", "Rosa Viejo", "Gris Musgo", "Sombra Negra", "Atenas", "Malbec", "Koy", "Cancion",
+        "Movidas Nocturnas", "Fantasma", "Gris Perlado", "Vison", "Oso Polar", "Azul Profundo", "Adagio",
+        "Seda", "Tierra", "Lavanda", "Nube Oscura", "Cedro", "Bilbo", "Gris Plomo", "Ladrillo Seco", "Azucar",
+        "Dulce de Leche", "Bucanero", "Estuco varios colores", "COLOR PREPARADO", "Granito Negro", "Granito Gris",
+        "Granito Marmolado", "Granito Rosa"
+    ];
+
+    function generarColores(precioBase) {
+        return coloresRevestimiento.map(color => ({ nombre: color, precio: precioBase }));
+    }
+
+    const catalogoProductos = {
+        "stone": {
+            nombre: "Lecatex Stone",
+            requiereBase: true,
+            presentaciones: [
+                {
+                    nombre: "Kit 20 kg (Rinde 2 m²)",
+                    rendimiento: 2,
+                    colores: generarColores(140000)
                 }
-            });
+            ]
+        },
+        "llana_fina": {
+            nombre: "Llana Fina",
+            requiereBase: true,
+            presentaciones: [
+                {
+                    nombre: "Balde 30 kg (Rinde 16 m²)",
+                    rendimiento: 16,
+                    kg: 30,
+                    halfRendimiento: 8,
+                    halfKg: 15,
+                    halfNombre: "Balde 15 kg",
+                    colores: generarColores(61000),
+                    halfColores: generarColores(41000)
+                },
+                {
+                    nombre: "Balde 15 kg (Rinde 8 m²)",
+                    rendimiento: 8,
+                    kg: 15,
+                    colores: generarColores(41000)
+                }
+            ]
+        },
+        "llana_media": {
+            nombre: "Llana Media",
+            requiereBase: true,
+            presentaciones: [
+                {
+                    nombre: "Balde 30 kg (Rinde 13 m²)",
+                    rendimiento: 13,
+                    kg: 30,
+                    halfRendimiento: 6,
+                    halfKg: 15,
+                    halfNombre: "Balde 15 kg",
+                    colores: generarColores(61000),
+                    halfColores: generarColores(41000)
+                },
+                {
+                    nombre: "Balde 15 kg (Rinde 6 m²)",
+                    rendimiento: 6,
+                    kg: 15,
+                    colores: generarColores(41000)
+                }
+            ]
+        },
+        "rodillo": {
+            nombre: "Revestimiento Rodillo",
+            requiereBase: true,
+            presentaciones: [
+                {
+                    nombre: "Balde 30 kg (Rinde 15 m²)",
+                    rendimiento: 15,
+                    colores: generarColores(61000)
+                }
+            ]
+        },
+        "tambores": {
+            nombre: "Tambores Industriales (300 kg)",
+            requiereBase: true,
+            presentaciones: [
+                {
+                    nombre: "Tambor Llana Fina 300 kg (Rinde 160 m²)",
+                    rendimiento: 160,
+                    colores: generarColores(610000)
+                },
+                {
+                    nombre: "Tambor Llana Media 300 kg (Rinde 130 m²)",
+                    rendimiento: 130,
+                    colores: generarColores(610000)
+                },
+                {
+                    nombre: "Tambor Rodillo 300 kg (Rinde 150 m²)",
+                    rendimiento: 150,
+                    colores: generarColores(610000)
+                }
+            ]
+        },
+        "membrana": {
+            nombre: "Membrana de Caucho",
+            requiereBase: false,
+            presentaciones: [
+                {
+                    nombre: "Tacho 22 kg (Rinde 10 m²)",
+                    rendimiento: 10,
+                    colores: [{ nombre: "Blanco / Gris", precio: 100000 }]
+                },
+                {
+                    nombre: "Tacho 12.5 kg (Rinde 5.5 m²)",
+                    rendimiento: 5.5,
+                    colores: [
+                        { nombre: "Blanco / Gris", precio: 75000 },
+                        { nombre: "Caucho Fino", precio: 75000 }
+                    ]
+                },
+                {
+                    nombre: "Tacho 6 kg (Rinde 2.5 m²)",
+                    rendimiento: 2.5,
+                    colores: [{ nombre: "Blanco / Gris", precio: 50000 }]
+                },
+                {
+                    nombre: "Tacho 5 kg (Rinde 2.2 m²)",
+                    rendimiento: 2.2,
+                    colores: [{ nombre: "Caucho Fino", precio: 45000 }]
+                }
+            ]
+        },
+        "latex": {
+            nombre: "Látex Profesional",
+            requiereBase: false,
+            presentaciones: [
+                {
+                    nombre: "Tacho 20 Litros (Rinde 60 m²)",
+                    rendimiento: 60,
+                    colores: [{ nombre: "Blanco", precio: 91000 }]
+                },
+                {
+                    nombre: "Tacho 10 Litros (Rinde 30 m²)",
+                    rendimiento: 30,
+                    colores: [{ nombre: "Blanco", precio: 61000 }]
+                },
+                {
+                    nombre: "Tacho 4 Litros (Rinde 12 m²)",
+                    rendimiento: 12,
+                    colores: [{ nombre: "Blanco", precio: 40000 }]
+                }
+            ]
+        },
+        "manga": {
+            nombre: "Manga de Caucho",
+            requiereBase: false,
+            presentaciones: [
+                {
+                    nombre: "Rollo (Rinde 11 ml)",
+                    rendimiento: 11,
+                    colores: [{ nombre: "Único", precio: 55000 }]
+                }
+            ]
+        },
+        "poliurea": {
+            nombre: "Poliurea",
+            requiereBase: false,
+            presentaciones: [
+                {
+                    nombre: "Tacho 20 Lts (Rinde 20 m²)",
+                    rendimiento: 20,
+                    colores: [{ nombre: "Único", precio: 180000 }]
+                },
+                {
+                    nombre: "Tacho 10 Lts (Rinde 10 m²)",
+                    rendimiento: 10,
+                    colores: [{ nombre: "Único", precio: 140000 }]
+                }
+            ]
+        }
+    };
 
-            if(!cardsHTML) {
-                contenedor.innerHTML = '<p class="text-center p-10 text-slate-500 font-bold">No hay ventas registradas en ese periodo.</p>';
+    let datosCalculados = null;
+    let productoActual = null;
+    let presentacionActual = null;
+
+    // Zona 2
+    let zona2Activa = false;
+    let productoActual2 = null;
+    let presentacionActual2 = null;
+
+    function toggleZona2() {
+        zona2Activa = !zona2Activa;
+        document.getElementById('zona2-panel').style.display = zona2Activa ? 'block' : 'none';
+        const btn = document.getElementById('btn-zona2');
+        btn.textContent = zona2Activa ? '➖ Quitar Segunda Zona' : '➕ Agregar Segunda Zona / Segundo Color';
+        btn.style.color = zona2Activa ? '#ef9a9a' : '#ff9800';
+        btn.style.borderColor = zona2Activa ? '#ef9a9a' : '#ff9800';
+        if (zona2Activa) inicializarZona2();
+        calcular();
+    }
+
+    function inicializarZona2() {
+        const selectProd2 = document.getElementById('cat_producto2');
+        selectProd2.innerHTML = '';
+        for (const key in catalogoProductos) {
+            selectProd2.innerHTML += `<option value="${key}">${catalogoProductos[key].nombre}</option>`;
+        }
+        cargarPresentaciones2();
+    }
+
+    function cargarPresentaciones2() {
+        const prodKey = document.getElementById('cat_producto2').value;
+        productoActual2 = catalogoProductos[prodKey];
+        document.getElementById('panel-base2').style.display = productoActual2.requiereBase ? 'block' : 'none';
+        const selectPres2 = document.getElementById('cat_presentacion2');
+        selectPres2.innerHTML = '';
+        productoActual2.presentaciones.forEach((pres, index) => {
+            selectPres2.innerHTML += `<option value="${index}">${pres.nombre}</option>`;
+        });
+        cargarColores2();
+    }
+
+    function cargarColores2() {
+        const presIndex = document.getElementById('cat_presentacion2').value;
+        presentacionActual2 = productoActual2.presentaciones[presIndex];
+        const selectColor2 = document.getElementById('cat_color2');
+        selectColor2.innerHTML = '';
+        presentacionActual2.colores.forEach((color, index) => {
+            selectColor2.innerHTML += `<option value="${index}">${color.nombre}</option>`;
+        });
+        actualizarPrecioManual2();
+    }
+
+    function actualizarPrecioManual2() {
+        const colorIndex = document.getElementById('cat_color2').value;
+        const colorSel2 = presentacionActual2.colores[colorIndex];
+        document.getElementById('precio2').value = colorSel2.precio;
+
+        const panel15_2 = document.getElementById('panel-precio15-2');
+        if (presentacionActual2.halfRendimiento) {
+            panel15_2.style.display = 'block';
+            const halfColor = (presentacionActual2.halfColores && presentacionActual2.halfColores[colorIndex])
+                ? presentacionActual2.halfColores[colorIndex]
+                : presentacionActual2.halfColores ? presentacionActual2.halfColores[0] : null;
+            if (halfColor) document.getElementById('precio15_2').value = halfColor.precio;
+        } else {
+            panel15_2.style.display = 'none';
+        }
+        calcular();
+    }
+
+    function inicializar() {
+        const selectProd = document.getElementById('cat_producto');
+        selectProd.innerHTML = '';
+        for (const key in catalogoProductos) {
+            selectProd.innerHTML += `<option value="${key}">${catalogoProductos[key].nombre}</option>`;
+        }
+        cargarPresentaciones();
+    }
+
+    function cargarPresentaciones() {
+        const prodKey = document.getElementById('cat_producto').value;
+        productoActual = catalogoProductos[prodKey];
+        
+        document.getElementById('panel-base').style.display = productoActual.requiereBase ? 'block' : 'none';
+
+        const selectPres = document.getElementById('cat_presentacion');
+        selectPres.innerHTML = '';
+        productoActual.presentaciones.forEach((pres, index) => {
+            selectPres.innerHTML += `<option value="${index}">${pres.nombre}</option>`;
+        });
+        
+        cargarColores();
+    }
+
+    function cargarColores() {
+        const presIndex = document.getElementById('cat_presentacion').value;
+        presentacionActual = productoActual.presentaciones[presIndex];
+
+        const selectColor = document.getElementById('cat_color');
+        selectColor.innerHTML = '';
+        presentacionActual.colores.forEach((color, index) => {
+            selectColor.innerHTML += `<option value="${index}">${color.nombre}</option>`;
+        });
+
+        actualizarPrecioManual();
+    }
+
+    function actualizarPrecioManual() {
+        const colorIndex = document.getElementById('cat_color').value;
+        const colorSeleccionado = presentacionActual.colores[colorIndex];
+        document.getElementById('precio').value = colorSeleccionado.precio;
+
+        // Mostrar campo de 15kg si la presentación tiene halfRendimiento
+        const panel15 = document.getElementById('panel-precio15');
+        if (presentacionActual.halfRendimiento) {
+            panel15.style.display = 'block';
+            // Pre-cargar precio del balde 15kg desde halfColores (mismo índice de color)
+            const halfColor = (presentacionActual.halfColores && presentacionActual.halfColores[colorIndex])
+                ? presentacionActual.halfColores[colorIndex]
+                : presentacionActual.halfColores ? presentacionActual.halfColores[0] : null;
+            if (halfColor) document.getElementById('precio15').value = halfColor.precio;
+        } else {
+            panel15.style.display = 'none';
+        }
+        calcular();
+    }
+
+    function formMoneda(valor) {
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(valor);
+    }
+
+    /**
+     * Calcula la combinación óptima de baldes grandes (30kg) y pequeños (15kg).
+     *
+     * Algoritmo:
+     *   1. Prueba todas las combinaciones posibles de N×30kg + M×15kg donde la
+     *      cobertura total >= metros requeridos.
+     *   2. De esas combinaciones válidas, elige la de menor costo total.
+     *      Si hay empate en costo, prefiere la de menor material sobrante.
+     *
+     * Esto resuelve correctamente todos los casos:
+     *   - 45m² con rend30=16, rend15=8 → 2×30 + 1×15 = 40m² (cubre), vs 3×30 = 48m²
+     *   - 20m² con rend30=13, rend15=6 → 1×30 + 2×15 = 25m² (cubre), vs 2×30 = 26m²
+     *   - 32m² con rend30=16, rend15=8 → 2×30 exacto, 0×15
+     */
+    function calcularCombinacionOptima(metros, rend30, rend15, precio30, precio15) {
+        // Límite superior: cuántos 30kg necesitaríamos sin ayuda del 15kg
+        const max30 = Math.ceil(metros / rend30);
+        // Límite de 15kg por tramo: nunca necesitamos más de ceil(rend30/rend15) por resto
+        const max15 = Math.ceil(rend30 / rend15);
+
+        let mejorCombo = null;
+
+        for (let n30 = 0; n30 <= max30; n30++) {
+            for (let n15 = 0; n15 <= max15; n15++) {
+                const cobertura = n30 * rend30 + n15 * rend15;
+                if (cobertura < metros) continue; // no alcanza
+
+                const costo = n30 * precio30 + n15 * precio15;
+                const sobra  = cobertura - metros;
+
+                if (mejorCombo === null) {
+                    mejorCombo = { baldes30: n30, baldes15: n15, costo, sobra };
+                } else if (costo < mejorCombo.costo) {
+                    mejorCombo = { baldes30: n30, baldes15: n15, costo, sobra };
+                } else if (costo === mejorCombo.costo && sobra < mejorCombo.sobra) {
+                    mejorCombo = { baldes30: n30, baldes15: n15, costo, sobra };
+                }
+            }
+        }
+
+        // Fallback (no debería ocurrir nunca)
+        if (!mejorCombo) {
+            const n = Math.ceil(metros / rend30);
+            mejorCombo = { baldes30: n, baldes15: 0, costo: n * precio30, sobra: n * rend30 - metros };
+        }
+
+        return {
+            baldes30:   mejorCombo.baldes30,
+            baldes15:   mejorCombo.baldes15,
+            subtotal30: mejorCombo.baldes30 * precio30,
+            subtotal15: mejorCombo.baldes15 * precio15,
+            total:      mejorCombo.costo,
+            sobra:      mejorCombo.sobra
+        };
+    }
+
+    function calcularZona(metros, producto, presentacion, colorIndex, precioManual, precio15Manual, p20cant, p20, p10cant, p10, p4cant, p4) {
+        const colorSel = presentacion.colores[colorIndex];
+        const nombreCompleto = `${producto.nombre} - ${presentacion.nombre.split(' (')[0]} (${colorSel.nombre})`;
+        const rendimiento = presentacion.rendimiento;
+        const requiereBase = producto.requiereBase;
+        const precioPrincipal = parseFloat(precioManual) || 0;
+
+        let datos = {
+            metros, nombreProd: nombreCompleto, colorElegido: colorSel.nombre,
+            requiereBase,
+            tachosPrincipales: 0, precioPrincipal, subtotalPrincipal: 0,
+            tieneCombo15: false,
+            baldes15: 0, precio15: 0, subtotal15: 0, nombreHalf: '',
+            base20: { cant: 0, precio: 0, subtotal: 0 },
+            base10: { cant: 0, precio: 0, subtotal: 0 },
+            base4: { cant: 0, precio: 0, subtotal: 0 },
+            subtotalZona: 0
+        };
+
+        let costoZona = 0;
+
+        // Activar combo 15kg si la presentación lo soporta (independiente del precio ingresado)
+        if (presentacion.halfRendimiento) {
+            const p15 = parseFloat(precio15Manual) || 0;
+            const combo = calcularCombinacionOptima(
+                metros, rendimiento, presentacion.halfRendimiento, precioPrincipal, p15
+            );
+
+            datos.tieneCombo15  = true;
+            datos.tachosPrincipales = combo.baldes30;
+            datos.subtotalPrincipal = combo.subtotal30;
+            datos.baldes15  = combo.baldes15;
+            datos.precio15  = p15;
+            datos.subtotal15 = combo.subtotal15;
+            datos.nombreHalf = presentacion.halfNombre || 'Balde 15 kg';
+            costoZona = combo.total;
+        } else {
+            const tachos = Math.ceil(metros / rendimiento);
+            datos.tachosPrincipales  = tachos;
+            datos.subtotalPrincipal  = tachos * precioPrincipal;
+            costoZona = datos.subtotalPrincipal;
+        }
+
+        if (requiereBase) {
+            const base20 = parseInt(p20cant) || 0;
+            const base10 = parseInt(p10cant) || 0;
+            const base4  = parseInt(p4cant)  || 0;
+            datos.base20 = { cant: base20, precio: p20, subtotal: base20 * p20 };
+            datos.base10 = { cant: base10, precio: p10, subtotal: base10 * p10 };
+            datos.base4  = { cant: base4,  precio: p4,  subtotal: base4  * p4  };
+            costoZona += (base20 * p20) + (base10 * p10) + (base4 * p4);
+        }
+
+        datos.subtotalZona = costoZona;
+        return datos;
+    }
+
+    function calcular() {
+        const costoDiv = document.getElementById('resultado_costo');
+        const desgloseDiv = document.getElementById('desglose_materiales');
+
+        let metrosInput = document.getElementById('metros').value.replace(',', '.');
+        const metros = parseFloat(metrosInput);
+
+        if (isNaN(metros) || metros <= 0) {
+            desgloseDiv.innerHTML = "Ingresá los metros para ver el desglose.";
+            costoDiv.innerText = "$ 0";
+            datosCalculados = null;
+            return;
+        }
+
+        const colorIndex = parseInt(document.getElementById('cat_color').value) || 0;
+
+        const zona1 = calcularZona(
+            metros, productoActual, presentacionActual, colorIndex,
+            document.getElementById('precio').value,
+            parseFloat(document.getElementById('precio15').value) || 0,
+            parseInt(document.getElementById('cant_base20').value) || 0,
+            parseFloat(document.getElementById('precio_base20').value) || 0,
+            parseInt(document.getElementById('cant_base10').value) || 0,
+            parseFloat(document.getElementById('precio_base10').value) || 0,
+            parseInt(document.getElementById('cant_base4').value) || 0,
+            parseFloat(document.getElementById('precio_base4').value) || 0
+        );
+
+        let textoDesglose = `<span style="color:#4fc3f7; font-weight:bold;">▌ Zona 1</span> — ${zona1.metros} m²<br>`;
+        if (zona1.tieneCombo15) {
+            if (zona1.tachosPrincipales > 0) {
+                textoDesglose += `<strong>${zona1.tachosPrincipales}x</strong> ${zona1.nombreProd}<br>`;
+            }
+            if (zona1.baldes15 > 0) {
+                textoDesglose += `<strong>${zona1.baldes15}x</strong> ${productoActual.nombre} — ${zona1.nombreHalf} (${zona1.colorElegido}) <span style="color:#a5d6a7; font-size:12px;">✓ combo óptimo</span><br>`;
+            }
+        } else {
+            textoDesglose += `<strong>${zona1.tachosPrincipales}x</strong> ${zona1.nombreProd}<br>`;
+        }
+        if (zona1.requiereBase) {
+            textoDesglose += `<span style="color:#ff9800; font-size:12px;">Base requerida: `;
+            if (zona1.base20.cant > 0) textoDesglose += `${zona1.base20.cant}x 20Lts `;
+            if (zona1.base10.cant > 0) textoDesglose += `${zona1.base10.cant}x 10Lts `;
+            if (zona1.base4.cant > 0) textoDesglose += `${zona1.base4.cant}x 4Lts `;
+            textoDesglose += `</span><br>`;
+        }
+        textoDesglose += `<span style="color:#81c784; font-size:13px;">Subtotal Zona 1: ${formMoneda(zona1.subtotalZona)}</span>`;
+
+        let zona2 = null;
+        let costoTotal = zona1.subtotalZona;
+
+        if (zona2Activa) {
+            let metros2Input = document.getElementById('metros2').value.replace(',', '.');
+            const metros2 = parseFloat(metros2Input);
+            if (!isNaN(metros2) && metros2 > 0 && productoActual2 && presentacionActual2) {
+                const colorIndex2 = parseInt(document.getElementById('cat_color2').value) || 0;
+                zona2 = calcularZona(
+                    metros2, productoActual2, presentacionActual2, colorIndex2,
+                    document.getElementById('precio2').value,
+                    parseFloat(document.getElementById('precio15_2').value) || 0,
+                    parseInt(document.getElementById('cant_base20_2').value) || 0,
+                    parseFloat(document.getElementById('precio_base20_2').value) || 0,
+                    parseInt(document.getElementById('cant_base10_2').value) || 0,
+                    parseFloat(document.getElementById('precio_base10_2').value) || 0,
+                    parseInt(document.getElementById('cant_base4_2').value) || 0,
+                    parseFloat(document.getElementById('precio_base4_2').value) || 0
+                );
+                costoTotal += zona2.subtotalZona;
+
+                textoDesglose += `<br><br><span style="color:#ce93d8; font-weight:bold;">▌ Zona 2</span> — ${zona2.metros} m²<br>`;
+                if (zona2.tieneCombo15) {
+                    if (zona2.tachosPrincipales > 0) {
+                        textoDesglose += `<strong>${zona2.tachosPrincipales}x</strong> ${zona2.nombreProd}<br>`;
+                    }
+                    if (zona2.baldes15 > 0) {
+                        textoDesglose += `<strong>${zona2.baldes15}x</strong> ${productoActual2.nombre} — ${zona2.nombreHalf} (${zona2.colorElegido}) <span style="color:#a5d6a7; font-size:12px;">✓ combo óptimo</span><br>`;
+                    }
+                } else {
+                    textoDesglose += `<strong>${zona2.tachosPrincipales}x</strong> ${zona2.nombreProd}<br>`;
+                }
+                if (zona2.requiereBase) {
+                    textoDesglose += `<span style="color:#ff9800; font-size:12px;">Base requerida: `;
+                    if (zona2.base20.cant > 0) textoDesglose += `${zona2.base20.cant}x 20Lts `;
+                    if (zona2.base10.cant > 0) textoDesglose += `${zona2.base10.cant}x 10Lts `;
+                    if (zona2.base4.cant > 0) textoDesglose += `${zona2.base4.cant}x 4Lts `;
+                    textoDesglose += `</span><br>`;
+                }
+                textoDesglose += `<span style="color:#ba68c8; font-size:13px;">Subtotal Zona 2: ${formMoneda(zona2.subtotalZona)}</span>`;
+            }
+        }
+
+        datosCalculados = { zona1, zona2, total: costoTotal };
+        desgloseDiv.innerHTML = textoDesglose;
+        costoDiv.innerText = formMoneda(costoTotal);
+    }
+
+    function generarPDF() {
+        if (!datosCalculados) {
+            alert("Por favor, ingresá los metros para calcular.");
+            return;
+        }
+
+        const clienteInput = document.getElementById('cliente').value || 'Consumidor Final';
+        const fechaActual = new Date().toLocaleDateString('es-AR');
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("Presupuesto Lecatex", 14, 22);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Cliente / Obra: ${clienteInput}`, 14, 32);
+        doc.text(`Fecha: ${fechaActual}`, 160, 22);
+
+        const bodyTabla = [];
+        let contadorItem = 1;
+
+        // ---- ZONA 1 ----
+        const z1 = datosCalculados.zona1;
+        bodyTabla.push([contadorItem++, { content: '▌ ZONA 1', colSpan: 4, styles: { fillColor: [20, 60, 80], textColor: [100, 210, 255], fontStyle: 'bold' } }]);
+        bodyTabla.push([contadorItem++, `Metros a cubrir Zona 1 (m² / ml)`, z1.metros, "-", "-"]);
+        if (z1.tieneCombo15) {
+            if (z1.tachosPrincipales > 0) {
+                bodyTabla.push([contadorItem++, z1.nombreProd, z1.tachosPrincipales, formMoneda(z1.precioPrincipal), formMoneda(z1.subtotalPrincipal)]);
+            }
+            if (z1.baldes15 > 0) {
+                bodyTabla.push([contadorItem++, `${z1.nombreHalf} — ${z1.colorElegido} (complemento óptimo)`, z1.baldes15, formMoneda(z1.precio15), formMoneda(z1.subtotal15)]);
+            }
+        } else {
+            bodyTabla.push([contadorItem++, z1.nombreProd, z1.tachosPrincipales, formMoneda(z1.precioPrincipal), formMoneda(z1.subtotalPrincipal)]);
+        }
+        if (z1.requiereBase) {
+            const cb1 = `(Color: ${z1.colorElegido})`;
+            if (z1.base20.cant > 0) bodyTabla.push([contadorItem++, `Fondo Base 20 Lts ${cb1}`, z1.base20.cant, formMoneda(z1.base20.precio), formMoneda(z1.base20.subtotal)]);
+            if (z1.base10.cant > 0) bodyTabla.push([contadorItem++, `Fondo Base 10 Lts ${cb1}`, z1.base10.cant, formMoneda(z1.base10.precio), formMoneda(z1.base10.subtotal)]);
+            if (z1.base4.cant > 0) bodyTabla.push([contadorItem++, `Fondo Base 4 Lts ${cb1}`, z1.base4.cant, formMoneda(z1.base4.precio), formMoneda(z1.base4.subtotal)]);
+        }
+        bodyTabla.push([contadorItem++, { content: `Subtotal Zona 1`, colSpan: 3, styles: { fontStyle: 'bold', halign: 'right' } }, { content: formMoneda(z1.subtotalZona), styles: { fontStyle: 'bold', textColor: [100, 210, 180] } }]);
+
+        // ---- ZONA 2 ----
+        if (datosCalculados.zona2) {
+            const z2 = datosCalculados.zona2;
+            bodyTabla.push([contadorItem++, { content: '▌ ZONA 2', colSpan: 4, styles: { fillColor: [50, 20, 70], textColor: [200, 150, 240], fontStyle: 'bold' } }]);
+            bodyTabla.push([contadorItem++, `Metros a cubrir Zona 2 (m² / ml)`, z2.metros, "-", "-"]);
+            if (z2.tieneCombo15) {
+                if (z2.tachosPrincipales > 0) {
+                    bodyTabla.push([contadorItem++, z2.nombreProd, z2.tachosPrincipales, formMoneda(z2.precioPrincipal), formMoneda(z2.subtotalPrincipal)]);
+                }
+                if (z2.baldes15 > 0) {
+                    bodyTabla.push([contadorItem++, `${z2.nombreHalf} — ${z2.colorElegido} (complemento óptimo)`, z2.baldes15, formMoneda(z2.precio15), formMoneda(z2.subtotal15)]);
+                }
             } else {
-                contenedor.innerHTML = cardsHTML + `
-                    <div class="mt-8 bg-green-600 p-6 rounded-2xl text-center shadow-2xl">
-                        <p class="text-xs uppercase font-black text-green-100 tracking-widest mb-1">Ganancia Neta Total</p>
-                        <h3 class="text-4xl font-black text-white">$${totalG.toLocaleString('es-AR')}</h3>
-                    </div>`;
+                bodyTabla.push([contadorItem++, z2.nombreProd, z2.tachosPrincipales, formMoneda(z2.precioPrincipal), formMoneda(z2.subtotalPrincipal)]);
             }
-        };
-
-        // LÓGICA PAGO FLETES
-        window.abrirModalPagoFlete = async function() {
-            const monto = prompt("💸 Ingrese monto de PAGO FLETE:");
-            if(monto && !isNaN(monto)) {
-                await addDoc(collection(db, "pagosFabrica"), {
-                    monto: parseFloat(monto),
-                    tipo: "PAGO FLETE",
-                    fecha: new Date().toISOString().split('T')[0],
-                    timestamp: serverTimestamp()
-                });
-                alert("Flete registrado.");
+            if (z2.requiereBase) {
+                const cb2 = `(Color: ${z2.colorElegido})`;
+                if (z2.base20.cant > 0) bodyTabla.push([contadorItem++, `Fondo Base 20 Lts ${cb2}`, z2.base20.cant, formMoneda(z2.base20.precio), formMoneda(z2.base20.subtotal)]);
+                if (z2.base10.cant > 0) bodyTabla.push([contadorItem++, `Fondo Base 10 Lts ${cb2}`, z2.base10.cant, formMoneda(z2.base10.precio), formMoneda(z2.base10.subtotal)]);
+                if (z2.base4.cant > 0) bodyTabla.push([contadorItem++, `Fondo Base 4 Lts ${cb2}`, z2.base4.cant, formMoneda(z2.base4.precio), formMoneda(z2.base4.subtotal)]);
             }
-        };
+            bodyTabla.push([contadorItem++, { content: `Subtotal Zona 2`, colSpan: 3, styles: { fontStyle: 'bold', halign: 'right' } }, { content: formMoneda(z2.subtotalZona), styles: { fontStyle: 'bold', textColor: [180, 100, 220] } }]);
+        }
 
-        // FILTROS
-        window.filtrarVentasPorFecha = function() {
-            // Aquí llamarías a tu función existente de refrescar tabla pasando los inputs
-            console.log("Filtrando ventas...");
-        };
+        doc.autoTable({
+            startY: 42,
+            head: [['Ítem', 'Detalle', 'Cantidad', 'Precio Unit.', 'Subtotal']],
+            body: bodyTabla,
+            theme: 'grid',
+            headStyles: { fillColor: [51, 51, 51], textColor: [255, 255, 255], fontStyle: 'bold' },
+            styles: { fontSize: 10, cellPadding: 4 },
+            columnStyles: {
+                0: { halign: 'center', cellWidth: 12 },
+                2: { halign: 'center', cellWidth: 20 },
+                3: { halign: 'right', cellWidth: 35 },
+                4: { halign: 'right', cellWidth: 35 }
+            }
+        });
 
-        window.filtrarPagosFabrica = function() {
-            // Aquí llamarías a tu función existente de refrescar tabla de fábrica
-            console.log("Filtrando fábrica...");
-        };
-    </script>
+        const finalY = doc.lastAutoTable.finalY || 42;
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total General: ${formMoneda(datosCalculados.total)}`, 14, finalY + 15);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100);
+        doc.text("■ Presupuesto válido por 15 días desde la fecha de emisión.", 14, finalY + 35);
+        doc.text("Lecatex Revestimientos | www.lecatex.com.ar", 14, finalY + 41);
+
+        const nombreArchivo = clienteInput.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        doc.save(`Presupuesto_Lecatex_${nombreArchivo}.pdf`);
+    }
+
+    inicializar();
+</script>
+
 </body>
 </html>
